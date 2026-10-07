@@ -1,0 +1,21 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: intranet_generales_web
+    restart: unless-stopped
+    expose:
+      - "3005"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    networks:
+      - intranet_generales_web_network
+    volumes:
+      - /home/ec2-user/.aws:/root/.aws:ro
+
+networks:
+  intranet_generales_web_network:
+    external: true
