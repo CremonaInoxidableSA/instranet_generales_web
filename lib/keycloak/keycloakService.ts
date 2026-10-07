@@ -17,15 +17,15 @@ export async function initKeycloakSession(): Promise<boolean> {
 }
 
 export async function keycloakLogin(): Promise<void> {
-  await keycloak.login()
+  await keycloak.login!()
 }
 
 export async function keycloakLogout(): Promise<void> {
-  await keycloak.logout({
+  await keycloak.logout!({
     redirectUri: window.location.origin,
   })
 }
 
 export async function keycloakChangePassword(): Promise<void> {
-  await keycloak.accountManagement()
+  await keycloak.accountManagement!()
 }

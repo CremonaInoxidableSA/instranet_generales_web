@@ -34,7 +34,7 @@ export default function Home() {
   return (
     <div className="flex w-full flex-col items-center gap-5 p-5 text-center font-medium">
       <p className="max-w-3xl text-base leading-7">
-        Hola, bienvenido a  Sistema de Producción de Cremona Inoxidable S.A.
+        Hola, bienvenido al Sistema de Generales de Cremona Inoxidable S.A.
         Desde acá podés acceder a los siguientes sistemas:
       </p>
       {submodulosUnificados.length === 0 ? (

@@ -12,7 +12,7 @@ const keycloak = new Keycloak({
 let initPromise: Promise<boolean> | null = null
 
 export function initKeycloakOnce(
-  options: Keycloak.KeycloakInitOptions
+  options: Record<string, unknown> | undefined
 ): Promise<boolean> {
   if (!initPromise) {
     initPromise = keycloak
@@ -23,18 +23,18 @@ export function initKeycloakOnce(
         token: keycloak.token || undefined,
         refreshToken: keycloak.refreshToken || undefined,
       })
-      .then((authenticated) => {
+      .then((authenticated: boolean) => {
         if (typeof window !== "undefined") {
           sessionStorage.setItem("keycloak_init_complete", "true")
         }
         return authenticated
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         initPromise = null
         throw error
       })
   }
-  return initPromise
+  return initPromise!
 }
 
 export function isKeycloakInitialized(): boolean {

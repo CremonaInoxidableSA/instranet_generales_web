@@ -8,7 +8,7 @@ export async function fetchWithKeycloak(
     throw new Error("La sesión de Keycloak no está autenticada")
   }
 
-  await keycloak.updateToken(30)
+  await keycloak.updateToken!(30)
 
   if (!keycloak.token) {
     throw new Error("Keycloak no proporcionó un access token")

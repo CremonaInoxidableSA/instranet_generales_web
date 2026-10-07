@@ -156,14 +156,18 @@ export const Selector = React.memo(function Selector({
     )
   }
 
+  const handleValueChange = onValueChange
+    ? (v: string | null) => onValueChange(v ?? "")
+    : undefined
+
   return (
-    <Select onValueChange={onValueChange} disabled={disabled} value={value}>
+    <Select onValueChange={handleValueChange} disabled={disabled} value={value}>
       <SelectTrigger
         className={`min-h-10 w-full rounded border-2 border-background6 bg-background3 px-3 py-2 text-sm focus:border-background6 ${extraClass}`}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent position="popper">
+      <SelectContent>
         <SelectGroup>
           {isObjectArray(data)
             ? data.map((opcion) => {

@@ -2,7 +2,7 @@
 
 import { useConnection } from "@/context/connectionContext"
 import { useEffect, useRef } from "react"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 
 export function ConnectionErrorNotifier() {
   const { isConnectionError, connectionErrors } = useConnection()
@@ -11,7 +11,10 @@ export function ConnectionErrorNotifier() {
   useEffect(() => {
     if (!isConnectionError) {
       previousSourcesRef.current.forEach((source) => {
-        toast.dismiss(`connection-error-${source}`)
+        toast.add({
+          type: "error",
+          description: `connection-error-${source}`,
+        })
       })
       previousSourcesRef.current = []
       return
@@ -25,24 +28,19 @@ export function ConnectionErrorNotifier() {
         (source): source is string => !currentSources.includes(source as never)
       )
       .forEach((source) => {
-        toast.dismiss(`connection-error-${source}`)
+        toast.add({
+          type: "error",
+          description: `connection-error-${source}`,
+        })
       })
 
     currentSources.forEach((source) => {
       const error = connectionErrors.find((item) => item.apiSource === source)
       if (!error) return
 
-      toast.error(error.message, {
-        id: `connection-error-${source}`,
-        duration: Infinity,
-        dismissible: false,
-        style: {
-          backgroundColor: "#dc2626",
-          color: "white",
-          border: "none",
-          fontWeight: "600",
-          fontSize: "16px",
-        },
+      toast.add({
+        type: "error",
+        description: `connection-error-${error.message}`,
       })
     })
 

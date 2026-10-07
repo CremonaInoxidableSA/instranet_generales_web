@@ -1,4 +1,4 @@
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import {
   getApiSourceFromUrl,
   resetConnectionError,
@@ -114,7 +114,10 @@ export async function handleApiResponse<T = unknown>(
       setConnectionError(true, getApiSourceFromUrl(response.url))
     }
 
-    toast.error(errorMsg)
+    toast.add({
+      type: "error",
+      description: `${errorMsg}`,
+    })
     throw new Error(errorMsg)
   }
 
@@ -127,7 +130,10 @@ export async function handleApiResponse<T = unknown>(
       ? successMessage(parsedData)
       : successMessage || getSuccessMessage(parsedData)
   if (msg) {
-    toast.success(msg)
+    toast.add({
+      type: "error",
+      description: `${msg}`,
+    })
   }
 
   return parsedData

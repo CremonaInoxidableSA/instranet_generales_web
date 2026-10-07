@@ -23,7 +23,7 @@ import {
 } from "@/types/types"
 
 import { fetchWithKeycloak } from "@/lib/keycloak/keycloak-fetch"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import {
   initKeycloakSession,
   keycloakLogin,
@@ -263,7 +263,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await keycloakLogout()
     } catch {
-      toast.error("Keycloak logout error")
+      toast.add({
+        type: "error",
+        description: "Keycloak logout error",
+      })
     }
 
     setUser(null)

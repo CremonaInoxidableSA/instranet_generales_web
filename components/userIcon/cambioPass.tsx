@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { toast } from "sonner"
+import { toast } from "@/components/ui/toast"
 import { useAuth } from "@/context/AuthProvider"
 import { fetchWithConnectionCheck } from "@/lib/connectionManager"
 import type { CambioPassProps } from "@/types/types"
@@ -52,22 +52,34 @@ const CambioPass = ({ open, onOpenChange }: CambioPassProps) => {
 
   const handleSubmit = async () => {
     if (!form.new_password) {
-      toast.error("Ingrese la nueva contraseña")
+      toast.add({
+        type: "info",
+        description: "Ingrese la nueva contraseña",
+      })
       return
     }
 
     if (!form.new_password_confirmation) {
-      toast.error("Confirme la nueva contraseña")
+      toast.add({
+        type: "info",
+        description: "Confirme la nueva contraseña",
+      })
       return
     }
 
     if (form.new_password !== form.new_password_confirmation) {
-      toast.error("Las contraseñas no coinciden")
+      toast.add({
+        type: "error",
+        description: "Las contraseñas no coinciden",
+      })
       return
     }
 
     if (form.new_password.length < 8) {
-      toast.error("La contraseña debe tener al menos 8 caracteres")
+      toast.add({
+        type: "error",
+        description: "La contraseña debe tener al menos 8 caracteres",
+      })
       return
     }
 
@@ -91,15 +103,24 @@ const CambioPass = ({ open, onOpenChange }: CambioPassProps) => {
       const data = await response.json()
 
       if (!response.ok) {
-        toast.error(data?.error ?? "Error al cambiar la contraseña")
+        toast.add({
+          type: "error",
+          description: `connection-error-${data?.error ?? "Error al cambiar la contraseña"}`,
+        })
         return
       }
 
-      toast.success("Contraseña actualizada correctamente")
+      toast.add({
+        type: "success",
+        description: "Contraseña actualizada correctamente",
+      })
       handleClose()
       await logout()
     } catch {
-      toast.error("Error de comunicación con el servidor")
+      toast.add({
+        type: "error",
+        description: "Error de comunicación con el servidor",
+      })
     } finally {
       setLoading(false)
     }

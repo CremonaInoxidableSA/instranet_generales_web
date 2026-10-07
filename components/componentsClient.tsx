@@ -70,7 +70,7 @@ export function DateRangePicker({
   return (
     <Field className="flex h-full w-full">
       <Popover>
-        <PopoverTrigger className="flex h-full" asChild>
+        <PopoverTrigger className="flex h-full">
           <Button
             variant="outline"
             id="date-picker-range"
@@ -160,11 +160,7 @@ export function DialogTemplate({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <form onSubmit={(e) => e.preventDefault()}>
-        <DialogContent
-          className="sm:max-w-lg"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
-        >
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description && (

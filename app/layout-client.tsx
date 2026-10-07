@@ -2,7 +2,7 @@
 import { ConnectionErrorNotifier } from "@/components/ConnectionErrorNotifier"
 import Header from "@/components/headerPrincipal"
 import { LogoCreminox } from "@/components/Logos"
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@/components/ui/toast"
 import { Spinner } from "@/components/ui/spinner"
 import { useAuth } from "@/context/AuthProvider"
 import { useEffect, useState } from "react"
