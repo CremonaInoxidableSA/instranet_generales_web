@@ -45,12 +45,6 @@ export default function HeaderPrincipal() {
               href={item.path}
               className="text-base opacity-70 transition-opacity hover:opacity-100"
               onClick={() => setDrawerOpen(false)}
-              target={item.nombre === "TICKETS_SOPORTE" ? "_blank" : undefined}
-              rel={
-                item.nombre === "TICKETS_SOPORTE"
-                  ? "noopener noreferrer"
-                  : undefined
-              }
             >
               {item.titulo}
             </Link>
@@ -78,6 +72,13 @@ export default function HeaderPrincipal() {
 
         {/* Desktop: Intranet + logo */}
         <div className="hidden w-[30%] items-center justify-end gap-5 xl:flex">
+          <Link
+            href={urlConfig.ticketsUrl}
+            className="text-base opacity-70 transition-opacity hover:opacity-100"
+            rel="noopener noreferrer"
+          >
+            TICKETS SOPORTE
+          </Link>
           <Link
             href={urlConfig.intranetUrl}
             className="text-base opacity-70 transition-opacity hover:opacity-100"
@@ -117,7 +118,7 @@ export default function HeaderPrincipal() {
 
       {/* Drawer lateral izquierdo */}
       <div
-        className={`-header fixed top-0 left-0 z-100 flex h-full w-64 flex-col bg-headerbg transition-transform duration-300 ease-in-out xl:hidden ${
+        className={`-header fixed top-0 left-0 z-100 flex h-full w-80 flex-col bg-headerbg transition-transform duration-300 ease-in-out xl:hidden ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -126,13 +127,23 @@ export default function HeaderPrincipal() {
           <div className="flex items-center gap-4">
             <UserIcon />
             <ThemeSwitcher />
-            <Link
-              href={urlConfig.intranetUrl}
-              className="text-base opacity-70 transition-opacity hover:opacity-100"
-              rel="noopener noreferrer"
-            >
-              INTRANET
-            </Link>
+            <div className="flex flex-col gap-1">
+              <Link
+                href={urlConfig.ticketsUrl}
+                className="text-base opacity-70 transition-opacity hover:opacity-100"
+                rel="noopener noreferrer"
+              >
+                TICKETS SOPORTE
+              </Link>
+
+              <Link
+                href={urlConfig.intranetUrl}
+                className="text-base opacity-70 transition-opacity hover:opacity-100"
+                rel="noopener noreferrer"
+              >
+                INTRANET
+              </Link>
+            </div>
           </div>
           <button
             onClick={() => setDrawerOpen(false)}
@@ -152,14 +163,6 @@ export default function HeaderPrincipal() {
                 href={submodulo.path}
                 className="text-base opacity-70 transition-opacity hover:opacity-100"
                 onClick={() => setDrawerOpen(false)}
-                target={
-                  submodulo.nombre === "TICKETS_SOPORTE" ? "_blank" : undefined
-                }
-                rel={
-                  submodulo.nombre === "TICKETS_SOPORTE"
-                    ? "noopener noreferrer"
-                    : undefined
-                }
               >
                 {submodulo.titulo}
               </Link>

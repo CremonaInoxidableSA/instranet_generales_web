@@ -2,13 +2,18 @@ import * as React from "react"
 import { ChangeEvent } from "react"
 
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from "@/components/ui/combobox"
 
 import {
   Table,
@@ -22,12 +27,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { LucideIcon, Check, ChevronDown } from "lucide-react"
+import { LucideIcon } from "lucide-react"
 import { Virtuoso } from "react-virtuoso"
 import type { ArrayData, ItemCardProps, ObjectArray } from "@/types/types"
 
@@ -85,7 +85,7 @@ export function BotonIcono({
 
 //---------------------------------------SELECTORES---------------------------------------//
 function isObjectArray(data: ArrayData): data is ObjectArray {
-  return data.length > 0 && typeof data[0] === "object"
+  return Array.isArray(data) && data.length > 0 && typeof data[0] === "object"
 }
 
 type SelectorBaseProps = {
@@ -115,82 +115,41 @@ type SelectorMultipleProps = {
 type SelectorProps = SelectorBaseProps &
   (SelectorSimpleProps | SelectorMultipleProps)
 
-const toObjectOptions = (data: ArrayData, keyLabel: string): ObjectArray => {
-  if (isObjectArray(data)) {
-    return data
-  }
-
-  return data.map((value) => ({
-    id: String(value),
-    [keyLabel]: String(value),
-  })) as ObjectArray
+type SelectorOption = {
+  id: string
+  label: string
 }
 
-export const Selector = React.memo(function Selector({
-  placeholder,
-  data,
-  keyId = "id",
-  keyLabel = "nombre",
-  onValueChange,
-  onValuesChange,
-  extraClass,
-  value,
-  values,
-  disabled = false,
-}: SelectorProps) {
-  const isMultiple =
-    Array.isArray(values) && typeof onValuesChange === "function"
+const toSelectorOptions = (
+  data: ArrayData,
+  keyId: string,
+  keyLabel: string
+): SelectorOption[] => {
+  if (isObjectArray(data)) {
+    return data.map((opcion, index) => {
+      const record = opcion as Record<string, unknown>
+      const rawId = record[keyId] ?? record.id
+      const id =
+        rawId !== undefined && rawId !== null && String(rawId) !== ""
+          ? String(rawId)
+          : `fallback-${index}`
 
-  if (isMultiple) {
-    return (
-      <SelectorMultiple
-        placeholder={placeholder}
-        data={toObjectOptions(data, keyLabel)}
-        keyId={keyId}
-        keyLabel={keyLabel}
-        values={values}
-        onValuesChange={onValuesChange}
-        extraClass={extraClass}
-        disabled={disabled}
-      />
-    )
+      const label = String(
+        record[keyLabel] ?? record.nombre ?? record.label ?? ""
+      )
+
+      return { id, label }
+    })
   }
 
-  const handleValueChange = onValueChange
-    ? (v: string | null) => onValueChange(v ?? "")
-    : undefined
+  return data.map((value, index) => {
+    const normalizedValue = value ?? ""
+    const id =
+      normalizedValue === "" ? `fallback-${index}` : String(normalizedValue)
 
-  return (
-    <Select onValueChange={handleValueChange} disabled={disabled} value={value}>
-      <SelectTrigger
-        className={`min-h-10 w-full rounded border-2 border-background6 bg-background3 px-3 py-2 text-sm focus:border-background6 ${extraClass}`}
-      >
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {isObjectArray(data)
-            ? data.map((opcion) => {
-                const opcionRecord = opcion as Record<string, unknown>
-                return (
-                  <SelectItem
-                    key={String(opcionRecord[keyId])}
-                    value={String(opcionRecord[keyId])}
-                  >
-                    {String(opcionRecord[keyLabel] ?? "")}
-                  </SelectItem>
-                )
-              })
-            : data.map((opcion) => (
-                <SelectItem key={opcion} value={String(opcion)}>
-                  {String(opcion)}
-                </SelectItem>
-              ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  )
-})
+    return { id, label: String(normalizedValue) }
+  })
+}
 
 export const SelectorConBusqueda = React.memo(function SelectorConBusqueda({
   placeholder,
@@ -205,179 +164,137 @@ export const SelectorConBusqueda = React.memo(function SelectorConBusqueda({
   values,
   disabled = false,
 }: SelectorProps) {
-  const [open, setOpen] = React.useState(false)
-  const [search, setSearch] = React.useState("")
   const isMultiple =
     Array.isArray(values) && typeof onValuesChange === "function"
   const selectedValues = React.useMemo(
     () => values?.map(String) ?? [],
     [values]
   )
-
-  const opcionesFiltradas = React.useMemo(() => {
-    const query = search.trim().toLowerCase()
-
-    if (!isObjectArray(data)) {
-      return data.filter((opcion) =>
-        String(opcion).toLowerCase().includes(query)
-      )
-    }
-
-    if (!query) return data
-
-    return data.filter((opcion) => {
-      const opcionRecord = opcion as Record<string, unknown>
-      const texto = [
-        String(opcionRecord[keyId] ?? ""),
-        String(opcionRecord[keyLabel] ?? ""),
-        String(opcionRecord.nombre ?? ""),
-        String(opcionRecord.apellido ?? ""),
-        String(opcionRecord.legajo ?? ""),
-      ]
-        .join(" ")
-        .toLowerCase()
-
-      return texto.includes(query)
-    })
-  }, [data, keyId, keyLabel, search])
-
-  const selectedLabel = React.useMemo(() => {
-    const objectOptions = toObjectOptions(data, keyLabel)
-
-    if (isMultiple) {
-      if (selectedValues.length === 0) {
-        return ""
-      }
-
-      return objectOptions
-        .filter((opcion) => {
-          const opcionRecord = opcion as Record<string, unknown>
-          return selectedValues.includes(String(opcionRecord[keyId]))
-        })
-        .map((opcion) => {
-          const opcionRecord = opcion as Record<string, unknown>
-          return String(opcionRecord[keyLabel] ?? "")
-        })
-        .join(", ")
-    }
-
-    if (value === undefined || value === "") {
-      return ""
-    }
-
-    const selected = objectOptions.find((opcion) => {
-      const opcionRecord = opcion as Record<string, unknown>
-      return String(opcionRecord[keyId]) === String(value)
-    })
-
-    return selected
-      ? String((selected as Record<string, unknown>)[keyLabel] ?? "")
-      : ""
-  }, [data, isMultiple, keyId, keyLabel, selectedValues, value])
-
-  const toggle = React.useCallback(
-    (id: string) => {
-      if (!isMultiple || !onValuesChange) {
-        return
-      }
-
-      onValuesChange(
-        selectedValues.includes(id)
-          ? selectedValues.filter((value) => value !== id)
-          : [...selectedValues, id]
-      )
-    },
-    [isMultiple, onValuesChange, selectedValues]
+  const options = React.useMemo(
+    () => toSelectorOptions(data, keyId, keyLabel),
+    [data, keyId, keyLabel]
   )
 
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(nextOpen) => {
-        setOpen(nextOpen)
-        if (!nextOpen) {
-          setSearch("")
+  const selectedOption = React.useMemo(() => {
+    if (isMultiple || value === undefined || value === "") {
+      return null
+    }
+
+    return options.find((option) => option.id === String(value)) ?? null
+  }, [isMultiple, options, value])
+
+  const selectedOptions = React.useMemo(
+    () => options.filter((option) => selectedValues.includes(option.id)),
+    [options, selectedValues]
+  )
+
+  const handleSingleValue = React.useCallback(
+    (nextValue: SelectorOption | null) => {
+      onValueChange?.(nextValue ? nextValue.id : "")
+    },
+    [onValueChange]
+  )
+
+  const handleMultipleValues = React.useCallback(
+    (nextValues: SelectorOption[] | null) => {
+      onValuesChange?.((nextValues ?? []).map((option) => option.id))
+    },
+    [onValuesChange]
+  )
+
+  if (isMultiple) {
+    return (
+      <Combobox
+        multiple
+        items={options}
+        value={selectedOptions}
+        onValueChange={handleMultipleValues}
+        disabled={disabled}
+        isItemEqualToValue={(a: SelectorOption, b: SelectorOption) =>
+          a.id === b.id
         }
-      }}
-    >
-      <PopoverTrigger asChild disabled={disabled}>
-        <button
-          type="button"
-          className={`flex min-h-10 w-full items-center justify-between rounded border-2 border-background6 bg-background3 px-3 py-2 text-left text-sm transition-colors focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${extraClass ?? ""}`}
-        >
-          <span className={selectedLabel ? "" : "opacity-50"}>
-            {selectedLabel || placeholder}
-          </span>
-          <ChevronDown className="ml-2 size-4 shrink-0 opacity-50" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-(--radix-popover-trigger-width) p-2"
-        align="start"
       >
-        <div className="flex flex-col gap-2">
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
+        <ComboboxChips
+          className={`min-h-10 w-full rounded border-2 border-background6 bg-background3 px-2 py-1 text-sm transition-colors focus-within:border-background6 ${extraClass ?? ""}`}
+        >
+          <ComboboxValue>
+            {() => (
+              <>
+                {selectedOptions.map((option) => (
+                  <ComboboxChip key={option.id}>{option.label}</ComboboxChip>
+                ))}
+                <ComboboxChipsInput
+                  placeholder={
+                    searchPlaceholder ??
+                    `Buscar ${placeholder.toLowerCase()}...`
+                  }
+                  className="text-sm"
+                />
+              </>
+            )}
+          </ComboboxValue>
+        </ComboboxChips>
+        <ComboboxContent>
+          <ComboboxInput
+            showTrigger={false}
             placeholder={
               searchPlaceholder ?? `Buscar ${placeholder.toLowerCase()}...`
             }
             className="h-9"
-            autoFocus
+            disabled={disabled}
           />
-
-          <div className="max-h-60 overflow-y-auto">
-            {opcionesFiltradas.length > 0 ? (
-              opcionesFiltradas.map((opcion, index) => {
-                const opcionRecord = opcion as Record<string, unknown>
-                const rawId = opcionRecord[keyId] ?? opcionRecord.id
-                const id =
-                  rawId !== undefined && rawId !== null && String(rawId) !== ""
-                    ? String(rawId)
-                    : `fallback-${index}`
-                const label = String(opcionRecord[keyLabel] ?? "")
-
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => {
-                      if (isMultiple) {
-                        toggle(id)
-                        return
-                      }
-
-                      onValueChange?.(id)
-                      setOpen(false)
-                    }}
-                    className={`flex w-full items-center justify-between rounded px-2 py-2 text-left text-sm transition-colors hover:bg-foreground/10 ${
-                      isMultiple
-                        ? selectedValues.includes(id)
-                          ? "bg-foreground/5"
-                          : ""
-                        : value === id
-                          ? "bg-foreground/5"
-                          : ""
-                    }`}
-                  >
-                    <span>{label}</span>
-                    {isMultiple
-                      ? selectedValues.includes(id) && (
-                          <Check className="size-4" />
-                        )
-                      : value === id && <Check className="size-4" />}
-                  </button>
-                )
-              })
-            ) : (
-              <p className="px-2 py-2 text-sm opacity-60">
-                No se encontraron resultados
-              </p>
+          <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+          <ComboboxList>
+            {(item: SelectorOption) => (
+              <ComboboxItem key={item.id} value={item}>
+                {item.label}
+              </ComboboxItem>
             )}
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    )
+  }
+
+  return (
+    <Combobox
+      items={options}
+      value={selectedOption}
+      onValueChange={handleSingleValue}
+      disabled={disabled}
+      isItemEqualToValue={(a: SelectorOption, b: SelectorOption) =>
+        a.id === b.id
+      }
+    >
+      <ComboboxTrigger
+        className={`flex min-h-10 w-full items-center justify-between rounded border-2 border-background6 bg-background3 px-3 py-2 text-sm font-normal shadow-none hover:bg-background3 focus:border-background6 ${extraClass ?? ""}`}
+        disabled={disabled}
+      >
+        <span
+          className={`truncate text-left ${
+            selectedOption ? "text-foreground" : "opacity-60"
+          }`}
+        >
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+      </ComboboxTrigger>
+      <ComboboxContent>
+        <ComboboxInput
+          showTrigger={false}
+          placeholder={searchPlaceholder ?? "Buscar..."}
+          className="h-9"
+          disabled={disabled}
+        />
+        <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+        <ComboboxList>
+          {(item: SelectorOption) => (
+            <ComboboxItem key={item.id} value={item}>
+              {item.label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   )
 })
 
@@ -400,77 +317,60 @@ export const SelectorMultiple = React.memo(function SelectorMultiple({
   values: (string | number)[]
   onValuesChange: (values: string[]) => void
 }) {
-  if (data.length === 0) {
-    return (
-      <div
-        className={`flex min-h-10 w-full items-center rounded border-2 border-background6 bg-background3 px-3 py-2 text-sm opacity-70 ${extraClass ?? ""}`}
-      >
-        Filtros no disponibles
-      </div>
-    )
-  }
-
-  const toggle = (id: string) => {
-    const stringValues = values.map(String)
-    onValuesChange(
-      stringValues.includes(id)
-        ? stringValues.filter((v) => v !== id)
-        : [...stringValues, id]
-    )
-  }
-
-  const label =
-    values.length === 0
-      ? placeholder
-      : data
-          .filter((o) => {
-            const optionRecord = o as Record<string, unknown>
-            return values.map(String).includes(String(optionRecord[keyId]))
-          })
-          .map((o) => {
-            const optionRecord = o as Record<string, unknown>
-            return String(optionRecord[keyLabel] ?? "")
-          })
-          .join(", ")
+  const options = React.useMemo(
+    () => toSelectorOptions(data, keyId, keyLabel),
+    [data, keyId, keyLabel]
+  )
+  const selectedValues = React.useMemo(() => values.map(String), [values])
+  const selectedOptions = React.useMemo(
+    () => options.filter((option) => selectedValues.includes(option.id)),
+    [options, selectedValues]
+  )
 
   return (
-    <Popover>
-      <PopoverTrigger asChild disabled={disabled}>
-        <button
-          type="button"
-          className={`flex min-h-10 w-full items-center justify-between rounded border-2 border-background6 bg-background3 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 ${extraClass ?? ""}`}
-        >
-          <span
-            className={`truncate ${values.length === 0 ? "opacity-50" : ""}`}
-          >
-            {label}
-          </span>
-          <ChevronDown className="ml-2 size-4 shrink-0 opacity-50" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-(--radix-popover-trigger-width) p-1"
-        align="start"
+    <Combobox
+      multiple
+      items={options}
+      value={selectedOptions}
+      onValueChange={(nextValues: SelectorOption[] | null) => {
+        onValuesChange((nextValues ?? []).map((option) => option.id))
+      }}
+      disabled={disabled}
+    >
+      <ComboboxChips
+        className={`min-h-10 w-full rounded border-2 border-background6 bg-background3 px-2 py-1 text-sm transition-colors focus-within:border-background6 ${extraClass ?? ""}`}
       >
-        {data.map((opcion) => {
-          const optionRecord = opcion as Record<string, unknown>
-          const id = String(optionRecord[keyId])
-          const selected = values.map(String).includes(id)
-          return (
-            <div
-              key={id}
-              onClick={() => toggle(id)}
-              className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-sm hover:bg-foreground/10"
-            >
-              <div className="flex size-4 shrink-0 items-center justify-center rounded border border-foreground/30">
-                {selected && <Check className="size-3" />}
-              </div>
-              <span>{String(optionRecord[keyLabel] ?? "")}</span>
-            </div>
-          )
-        })}
-      </PopoverContent>
-    </Popover>
+        <ComboboxValue>
+          {() => (
+            <>
+              {selectedOptions.map((option) => (
+                <ComboboxChip key={option.id}>{option.label}</ComboboxChip>
+              ))}
+              <ComboboxChipsInput
+                placeholder={selectedOptions.length === 0 ? placeholder : ""}
+                className="text-sm"
+              />
+            </>
+          )}
+        </ComboboxValue>
+      </ComboboxChips>
+      <ComboboxContent>
+        <ComboboxInput
+          showTrigger={false}
+          placeholder={`Buscar ${placeholder.toLowerCase()}...`}
+          className="h-9"
+          disabled={disabled}
+        />
+        <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+        <ComboboxList>
+          {(item: SelectorOption) => (
+            <ComboboxItem key={item.id} value={item}>
+              {item.label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   )
 })
 

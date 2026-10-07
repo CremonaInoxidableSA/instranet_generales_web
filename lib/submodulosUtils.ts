@@ -15,7 +15,7 @@ const toTitle = (value: string) =>
   value
     .replace(/^SUBMODULO/, "")
     .replace(/_/g, " ")
-    .replace(/PRODUCCION$/, "")
+    .replace(/GENERALES$/, "")
     .toUpperCase()
 
 export interface SubmoduloItem {
@@ -56,16 +56,6 @@ export const getUnifiedSubmodulos = (
     .sort((a, b) => a.titulo.localeCompare(b.titulo))
 
   items.push(...usuarioSubmodulos)
-
-  if (includeSpecial) {
-    items.push({
-      nombre: "TICKETS_SOPORTE",
-      titulo: "TICKETS SOPORTE",
-      path: urlConfig.ticketsUrl,
-      Icon: includeIcons ? resolveIcon("Ticket") : undefined,
-      isSpecial: true,
-    })
-  }
 
   return items
 }
