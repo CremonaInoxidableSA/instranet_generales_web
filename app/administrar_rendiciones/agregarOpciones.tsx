@@ -4,7 +4,18 @@ export default function AgregarOpciones() {
   return (
     <div className="flex flex-1 flex-col gap-3 rounded">
       <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
-        <div className="flex flex-row justify-between gap-3 items-center">
+        <div className="flex flex-row items-center justify-between gap-3">
+          <h1 className="font-semibold">VIAJES</h1>
+          <Boton
+            extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"
+            placeholder="AGREGAR VIAJE"
+            onClick={undefined}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex flex-row items-center justify-between gap-3">
           <h1 className="font-semibold">MEDIO DE PAGO</h1>
           <Boton
             extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"
@@ -15,7 +26,7 @@ export default function AgregarOpciones() {
       </div>
 
       <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
-        <div className="flex flex-row justify-between gap-3 items-center">
+        <div className="flex flex-row items-center justify-between gap-3">
           <h1 className="font-semibold">DIVISAS</h1>
           <Boton
             extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"
@@ -26,7 +37,7 @@ export default function AgregarOpciones() {
       </div>
 
       <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
-        <div className="flex flex-row justify-between gap-3 items-center">
+        <div className="flex flex-row items-center justify-between gap-3">
           <h1 className="font-semibold">MOTIVOS</h1>
           <Boton
             extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"

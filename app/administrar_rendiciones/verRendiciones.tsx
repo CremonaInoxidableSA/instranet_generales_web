@@ -107,6 +107,7 @@ export default function VerRendiciones() {
             selectedIndex={viajeSeleccionado}
             onTagClick={(_tag, index) => setViajeSeleccionado(index)}
             extraClass="flex-1 min-h-0"
+            
           />
         </div>
 
