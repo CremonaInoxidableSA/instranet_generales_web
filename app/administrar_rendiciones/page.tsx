@@ -5,7 +5,6 @@ import { useState } from "react"
 
 import VerRendiciones from "./verRendiciones"
 import AgregarOpciones from "./agregarOpciones"
-import { Separator } from "@/components/ui/separator";
 
 const secciones = [
   {
@@ -52,7 +51,7 @@ export default function AdministrarRendiciones() {
         <div
           className={`${
             seccionActiva === 1 ? "flex" : "hidden"
-          } min-w-0 flex-1 flex-col gap-3 xl:flex xl:flex-3`}
+          } min-h-550 min-w-0 flex-1 flex-col gap-3 xl:flex xl:min-h-auto xl:flex-3`}
         >
           <VerRendiciones />
         </div>
@@ -60,7 +59,7 @@ export default function AdministrarRendiciones() {
         <div
           className={`${
             seccionActiva === 2 ? "flex" : "hidden"
-          } min-w-0 flex-1 flex-col gap-3 xl:flex xl:flex-1`}
+          } xl:min-h-auto min-w-0 min-h-350 flex-1 flex-col gap-3 xl:flex xl:flex-1`}
         >
           <AgregarOpciones />
         </div>

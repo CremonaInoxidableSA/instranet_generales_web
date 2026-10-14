@@ -12,6 +12,7 @@ export default function AgregarOpciones() {
             onClick={undefined}
           />
         </div>
+        TABLA
       </div>
 
       <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
@@ -23,6 +24,7 @@ export default function AgregarOpciones() {
             onClick={undefined}
           />
         </div>
+        TABLA
       </div>
 
       <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
@@ -34,6 +36,7 @@ export default function AgregarOpciones() {
             onClick={undefined}
           />
         </div>
+        TABLA
       </div>
 
       <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
@@ -45,6 +48,7 @@ export default function AgregarOpciones() {
             onClick={undefined}
           />
         </div>
+        TABLA
       </div>
     </div>
   )
