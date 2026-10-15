@@ -28,7 +28,7 @@ export default function AdministrarRendiciones() {
     <div className="flex h-full flex-1 flex-col items-center gap-3 p-5">
       <h1 className="text-xl font-bold xl:text-2xl">ADMINISTRAR RENDICIONES</h1>
 
-      <div className="flex w-full flex-row items-center justify-center gap-3 xl:hidden">
+      <div className="flex w-full flex-row items-center justify-center gap-3">
         {secciones.map(({ id, nombre, extraClasses }) => {
           const isActive = seccionActiva === id
           return (
@@ -47,11 +47,11 @@ export default function AdministrarRendiciones() {
         })}
       </div>
 
-      <div className="flex w-full min-w-0 flex-1 flex-col gap-3 xl:flex-row">
+      <div className="flex w-full min-w-0 flex-1 flex-col gap-3">
         <div
           className={`${
             seccionActiva === 1 ? "flex" : "hidden"
-          } min-h-550 min-w-0 flex-1 flex-col gap-3 xl:flex xl:min-h-auto xl:flex-3`}
+          } flex-1 flex-col gap-3`}
         >
           <VerRendiciones />
         </div>
@@ -59,7 +59,7 @@ export default function AdministrarRendiciones() {
         <div
           className={`${
             seccionActiva === 2 ? "flex" : "hidden"
-          } xl:min-h-auto min-w-0 min-h-350 flex-1 flex-col gap-3 xl:flex xl:flex-1`}
+          } flex-1 flex-col gap-3`}
         >
           <AgregarOpciones />
         </div>

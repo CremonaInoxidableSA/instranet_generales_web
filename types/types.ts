@@ -107,6 +107,7 @@ export type Listar<T> = Pick<T, keyof T>
 export interface AuthContextType {
   user: UsersData | null
   loading: boolean
+  authLoading: boolean
   login: () => Promise<OperacionResponse>
   logout: () => Promise<boolean>
 }
@@ -148,6 +149,7 @@ export type Viaje = {
   id_viaje: number
   nombre?: string
   id_moneda?: number
+  estado?: boolean
 }
 
 export type ViajeUsuario = {

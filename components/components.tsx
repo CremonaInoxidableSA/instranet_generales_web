@@ -62,23 +62,29 @@ export function BotonIcono({
   iconClass,
   onClick,
   disabled = false,
+  ariaLabel,
+  title,
 }: {
   icono: LucideIcon
   buttonClass?: string
   iconClass?: string
   onClick?: () => void
   disabled?: boolean
+  ariaLabel?: string
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`${buttonClass} ${
+      className={`${buttonClass ?? ""} ${
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-      }`}
+      }`.trim()}
       disabled={disabled}
+      aria-label={ariaLabel}
+      title={title}
     >
-      <Icono className={iconClass} />
+      <Icono className={iconClass ?? undefined} />
     </button>
   )
 }
@@ -435,7 +441,7 @@ export const TextScrollArea = React.memo(function TextScrollArea({
   }) => React.ReactNode
 }) {
   return (
-    <div className={`flex flex-col rounded ${extraClass || ""}`}>
+    <div className={`flex min-h-0 flex-1 flex-col rounded ${extraClass || ""}`}>
       {placeholder && (
         <h4
           className={`mb-2 leading-none font-medium ${placeholderExtraClass || ""}`}
@@ -449,7 +455,7 @@ export const TextScrollArea = React.memo(function TextScrollArea({
         </div>
       ) : (
         <Virtuoso
-          style={{ flex: 1, minHeight: 0, height: "100%" }}
+          style={{ flex: 1, minHeight: 0, height: "100%", width: "100%" }}
           totalCount={tags.length}
           components={{
             Footer: () => (
@@ -485,11 +491,11 @@ export const TextScrollArea = React.memo(function TextScrollArea({
 
             return (
               <div key={`${tag}-${index}`} className="mr-4">
-                <span
-                  className={`flex flex-row items-center rounded px-2 ${withHover ? "hover:bg-foreground/10" : ""} ${isSelected ? "bg-foreground/10" : ""}`}
+                <div
+                  className={`flex w-full flex-row items-center rounded px-2 ${withHover ? "hover:bg-foreground/10" : ""} ${isSelected ? "bg-foreground/10" : ""}`}
                 >
                   {rowContent}
-                </span>
+                </div>
                 {index < tags.length - 1 && <Separator className="my-2" />}
               </div>
             )

@@ -3,350 +3,227 @@
 import { useCallback, useEffect, useState, useRef } from "react"
 import { fetchWithConnectionCheck } from "@/lib/connectionManager"
 import { useAuth } from "@/context/AuthProvider"
-import type {
-  FiltrosMonitoreo,
-  Labor,
-  LaborProducto,
-  Operario,
-  Producto,
-  Sector,
-} from "@/types/types"
+import { Conceptos, Moneda, MedioPago, Viaje } from "@/types/types"
 
-export type {
-  FiltrosMonitoreo,
-  Labor,
-  LaborProducto,
-  Operario,
-  Producto,
-  Sector,
-} from "@/types/types"
-
-//------------------------------------CARGAR NUEVA TAREA------------------------------------//
-
-export function useSectores() {
-  const { loading: authLoading, user } = useAuth()
-  const [sectores, setSectores] = useState<Sector[]>([])
-  const [loading, setLoading] = useState(true)
+function useGenericToggleList<T extends Record<string, unknown>>({
+  endpoint,
+  enableEndpoint,
+  disableEndpoint,
+  keyName,
+  entityLabel,
+}: {
+  endpoint: string
+  enableEndpoint: string
+  disableEndpoint: string
+  keyName: string
+  entityLabel: string
+}) {
+  const [items, setItems] = useState<T[]>([])
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { user, authLoading } = useAuth()
   const mountedRef = useRef(true)
 
+  const fetchItems = useCallback(async () => {
+    if (authLoading) return
+    if (!user) {
+      setItems([])
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetchWithConnectionCheck(endpoint)
+      if (!response.ok) {
+        throw new Error(`Error al obtener ${entityLabel}`)
+      }
+
+      const body = await response.json()
+      const list = Array.isArray(body?.data) ? body.data : body
+
+      if (!mountedRef.current) return
+      setItems(Array.isArray(list) ? (list as T[]) : [])
+    } catch (err: unknown) {
+      if (!mountedRef.current) return
+
+      setItems([])
+      setError(
+        err instanceof Error ? err.message : `Error al obtener ${entityLabel}`
+      )
+    } finally {
+      if (mountedRef.current) setLoading(false)
+    }
+  }, [authLoading, endpoint, entityLabel, user])
+
+  const habilitarItem = useCallback(
+    async (id: number) => {
+      try {
+        const resp = await fetchWithConnectionCheck(enableEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [keyName]: id }),
+        })
+
+        if (!resp.ok) throw new Error(`Error al habilitar ${entityLabel}`)
+        await fetchItems()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [enableEndpoint, entityLabel, fetchItems, keyName]
+  )
+
+  const deshabilitarItem = useCallback(
+    async (id: number) => {
+      try {
+        const resp = await fetchWithConnectionCheck(disableEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [keyName]: id }),
+        })
+
+        if (!resp.ok) throw new Error(`Error al deshabilitar ${entityLabel}`)
+        await fetchItems()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [disableEndpoint, entityLabel, fetchItems, keyName]
+  )
+
   useEffect(() => {
+    mountedRef.current = true
+
+    if (authLoading || !user) {
+      return () => {
+        mountedRef.current = false
+      }
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void fetchItems()
+    }, 0)
+
     return () => {
       mountedRef.current = false
+      window.clearTimeout(timeoutId)
     }
-  }, [])
+  }, [authLoading, fetchItems, user])
 
-  useEffect(() => {
-    if (authLoading) return
-    if (!user) return
-
-    async function fetchData() {
-      try {
-        const response = await fetchWithConnectionCheck(
-          "/api/listas/lista-sectores"
-        )
-        if (!response.ok) throw new Error("Error al obtener sectores")
-        const data: Sector[] = await response.json()
-        if (mountedRef.current) setSectores(data)
-      } catch {
-        if (mountedRef.current)
-          setError("No se pudo cargar la lista de sectores")
-      } finally {
-        if (mountedRef.current) setLoading(false)
-      }
-    }
-    fetchData()
-  }, [authLoading, user])
-
-  useEffect(() => {
-    if (!authLoading && !user && mountedRef.current) {
-      setLoading(false)
-    }
-  }, [authLoading, user])
-
-  return { sectores, loading, error }
+  return {
+    items,
+    loading,
+    error,
+    refresh: fetchItems,
+    habilitarItem,
+    deshabilitarItem,
+  }
 }
 
-export function useProductosSector(id_sector: number | null) {
-  const [productos, setProductos] = useState<Producto[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function useMonedas() {
+  const {
+    items: monedas,
+    loading,
+    error,
+    refresh,
+    habilitarItem,
+    deshabilitarItem,
+  } = useGenericToggleList<Moneda>({
+    endpoint: "/api/generales/monedas/lista",
+    enableEndpoint: "/api/generales/monedas/habilitar",
+    disableEndpoint: "/api/generales/monedas/deshabilitar",
+    keyName: "id_moneda",
+    entityLabel: "moneda",
+  })
 
-  useEffect(() => {
-    if (id_sector === null) return
-    async function fetchData() {
-      setLoading(true)
-      try {
-        const response = await fetchWithConnectionCheck(
-          `/api/listas/lista-productosSector?id_sector=${id_sector}`
-        )
-        if (!response.ok) throw new Error("Error al obtener productos")
-        const data: Producto[] = await response.json()
-        setProductos(data)
-      } catch {
-        setError("No se pudo cargar la lista de productos")
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [id_sector])
-
-  return { productos, loading, error }
+  return {
+    monedas,
+    loading,
+    error,
+    refresh,
+    habilitarMoneda: habilitarItem,
+    deshabilitarMoneda: deshabilitarItem,
+  }
 }
 
-export function useProductos() {
-  const { loading: authLoading, user } = useAuth()
-  const [productos, setProductos] = useState<Producto[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const initializedRef = useRef(false)
+export function useViajes() {
+  const {
+    items: viajes,
+    loading,
+    error,
+    refresh,
+    habilitarItem,
+    deshabilitarItem,
+  } = useGenericToggleList<Viaje>({
+    endpoint: "/api/generales/viajes/lista",
+    enableEndpoint: "/api/generales/viajes/habilitar",
+    disableEndpoint: "/api/generales/viajes/deshabilitar",
+    keyName: "id_viaje",
+    entityLabel: "viaje",
+  })
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const response = await fetchWithConnectionCheck(
-        "/api/listas/lista-productos"
-      )
-      if (!response.ok) throw new Error("Error al obtener productos")
-      const data: Producto[] = await response.json()
-      setProductos(data)
-    } catch {
-      setError("No se pudo cargar la lista de productos")
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (authLoading || initializedRef.current) return
-    initializedRef.current = true
-    if (!user) {
-      void (async () => {
-        setLoading(false)
-      })()
-      return
-    }
-
-    void (async () => {
-      await fetchData()
-    })()
-  }, [authLoading, user, fetchData])
-
-  return { productos, loading, error, refetch: fetchData }
+  return {
+    viajes,
+    loading,
+    error,
+    refresh,
+    habilitarViaje: habilitarItem,
+    deshabilitarViaje: deshabilitarItem,
+  }
 }
 
-export function useLabores(
-  id_sector: number | null,
-  id_producto: number | null
-) {
-  const [labores, setLabores] = useState<Labor[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function useMediosPago() {
+  const {
+    items: mediosPago,
+    loading,
+    error,
+    refresh,
+    habilitarItem,
+    deshabilitarItem,
+  } = useGenericToggleList<MedioPago>({
+    endpoint: "/api/generales/medios-pago/lista",
+    enableEndpoint: "/api/generales/medios-pago/habilitar",
+    disableEndpoint: "/api/generales/medios-pago/deshabilitar",
+    keyName: "id_medio_pago",
+    entityLabel: "medio de pago",
+  })
 
-  useEffect(() => {
-    if (id_sector === null || id_producto === null) return
-
-    void (async () => {
-      setLabores([])
-      setError(null)
-      setLoading(true)
-
-      try {
-        const response = await fetchWithConnectionCheck(
-          `/api/listas/lista-labores?id_sector=${id_sector}&id_producto=${id_producto}`
-        )
-        if (!response.ok) throw new Error("Error al obtener labores")
-        const data: Labor[] = await response.json()
-        setLabores(data)
-      } catch {
-        setError("No se pudo cargar la lista de labores")
-        setLabores([])
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [id_sector, id_producto])
-
-  return { labores, loading, error }
+  return {
+    mediosPago,
+    loading,
+    error,
+    refresh,
+    habilitarMedioPago: habilitarItem,
+    deshabilitarMedioPago: deshabilitarItem,
+  }
 }
 
-const GRUPO_DISPLAY: Record<string, string> = {
-  GRUPO_ENCARGADOS_PRODUCCION: "ENCARGADO",
-  GRUPO_OPERARIOS_PRODUCCION: "OPERARIO",
-}
+export function useConceptos() {
+  const {
+    items: conceptos,
+    loading,
+    error,
+    refresh,
+    habilitarItem,
+    deshabilitarItem,
+  } = useGenericToggleList<Conceptos>({
+    endpoint: "/api/generales/conceptos/lista",
+    enableEndpoint: "/api/generales/conceptos/habilitar",
+    disableEndpoint: "/api/generales/conceptos/deshabilitar",
+    keyName: "id_concepto",
+    entityLabel: "concepto",
+  })
 
-export function useOperarios() {
-  const { loading: authLoading, user } = useAuth()
-  const [operarios, setOperarios] = useState<Operario[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const initializedRef = useRef(false)
-
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    try {
-      const response = await fetchWithConnectionCheck(
-        "/api/auth/lista-operarios",
-        { cache: "no-store" }
-      )
-      if (!response.ok) throw new Error("Error al obtener operarios")
-      const data = await response.json()
-      const operariosFormateados = data.map(
-        (o: {
-          id: number
-          nombre: string
-          apellido: string
-          grupo: string
-        }) => ({
-          ...o,
-          nombre_completo: `${o.apellido} ${o.nombre}`,
-          grupo_display: GRUPO_DISPLAY[o.grupo] ?? o.grupo.toUpperCase(),
-        })
-      )
-      setOperarios(operariosFormateados)
-    } catch {
-      setError("No se pudo cargar la lista de operarios")
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (authLoading || initializedRef.current) return
-    initializedRef.current = true
-    if (!user) {
-      void (async () => {
-        setLoading(false)
-      })()
-      return
-    }
-
-    void (async () => {
-      await fetchData()
-    })()
-  }, [authLoading, user, fetchData])
-
-  return { operarios, loading, error, refetch: fetchData }
-}
-
-//------------------------------------LABORES POR PRODUCTO------------------------------------//
-
-export function useLaborresProducto(id_producto: number | null) {
-  const [labores, setLabores] = useState<LaborProducto[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchData = useCallback(async () => {
-    if (id_producto === null) {
-      setLabores([])
-      return
-    }
-    setLoading(true)
-    try {
-      const response = await fetchWithConnectionCheck(
-        `/api/listas/lista-labores-producto?id_producto=${id_producto}`
-      )
-      if (!response.ok) throw new Error("Error al obtener labores")
-      const data: LaborProducto[] = await response.json()
-      setLabores(data)
-    } catch {
-      setError("No se pudo cargar la lista de labores")
-    } finally {
-      setLoading(false)
-    }
-  }, [id_producto])
-
-  useEffect(() => {
-    if (id_producto === null) return
-    void (async () => {
-      await fetchData()
-    })()
-  }, [fetchData, id_producto])
-
-  return { labores, loading, error, refetch: fetchData }
-}
-
-//------------------------------------FILTROS MONITOREO------------------------------------//
-
-const FILTROS_EMPTY: FiltrosMonitoreo = {
-  numeros_op: [],
-  numeros_plano: [],
-  operarios: [],
-  sectores: [],
-}
-
-export function useFiltrosEnCurso() {
-  const { loading: authLoading, user } = useAuth()
-  const [filtros, setFiltros] = useState<FiltrosMonitoreo>(FILTROS_EMPTY)
-  const [loading, setLoading] = useState(true)
-  const initializedRef = useRef(false)
-
-  useEffect(() => {
-    if (authLoading || initializedRef.current) return
-    initializedRef.current = true
-    if (!user) return
-
-    async function fetchData() {
-      try {
-        const res = await fetchWithConnectionCheck("/api/filtros/tareasEnCurso")
-        if (!res.ok) throw new Error()
-        const data: FiltrosMonitoreo = await res.json()
-        setFiltros(data)
-      } catch {
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [authLoading, user])
-
-  return { filtros, loading }
-}
-
-export function useFiltrosFinalizadas(
-  fecha_inicio?: string,
-  fecha_fin?: string,
-  refreshVersion?: number
-) {
-  const { loading: authLoading, user } = useAuth()
-  const [filtros, setFiltros] = useState<FiltrosMonitoreo>(FILTROS_EMPTY)
-  const [loading, setLoading] = useState(true)
-  const initializedRef = useRef(false)
-
-  useEffect(() => {
-    if (authLoading) return
-    if (!user) {
-      if (!initializedRef.current) {
-        initializedRef.current = true
-        setLoading(false)
-      }
-      return
-    }
-    if (!fecha_inicio || !fecha_fin) return
-
-    initializedRef.current = true
-    async function fetchData() {
-      setLoading(true)
-      try {
-        const params = new URLSearchParams({
-          fecha_inicio: fecha_inicio!,
-          fecha_fin: fecha_fin!,
-        })
-        const res = await fetchWithConnectionCheck(
-          `/api/filtros/tareasFinalizadas?${params}`
-        )
-        if (!res.ok) throw new Error()
-        const data: FiltrosMonitoreo = await res.json()
-        setFiltros(data)
-      } catch {
-        setFiltros(FILTROS_EMPTY)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [authLoading, user, fecha_inicio, fecha_fin, refreshVersion])
-
-  return { filtros, loading }
+  return {
+    conceptos,
+    loading,
+    error,
+    refresh,
+    habilitarConcepto: habilitarItem,
+    deshabilitarConcepto: deshabilitarItem,
+  }
 }
