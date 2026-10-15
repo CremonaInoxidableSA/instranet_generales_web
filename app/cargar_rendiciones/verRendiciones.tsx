@@ -128,7 +128,7 @@ export default function VerRendiciones() {
             onTagClick={(_tag, index) => setViajeSeleccionado(index)}
             extraClass="flex-1 min-h-0"
           />
-        </div>ts
+        </div>
 
         <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
           <div className="flex flex-row items-center justify-between gap-3">

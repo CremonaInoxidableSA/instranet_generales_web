@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { getBearerTokenFromRequest } from "@/app/api/_utils/authApi"
-const API_BASE_URL = process.env.API_AUTH_URL ?? "http://192.168.20.151:8000"
+const API_BASE_URL = process.env.API_AUTH_URL ?? "http://192.168.20.151:8205"
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   const token = getBearerTokenFromRequest(request)
 
   if (!token) {
@@ -13,24 +13,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json()
-
-    const response = await fetch(`${API_BASE_URL}/usuarios-produccion/crear`, {
-      method: "POST",
+    const response = await fetch(`${API_BASE_URL}/usuarios-rrhh/lista`, {
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(body),
     })
 
-    const data = await response.json()
-
     if (!response.ok) {
-      return NextResponse.json(data, { status: response.status })
+      return NextResponse.json(
+        { error: "Error al consultar la API" },
+        { status: response.status }
+      )
     }
 
+    const data = await response.json()
     return NextResponse.json(data)
   } catch {
     return NextResponse.json(

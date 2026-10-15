@@ -137,101 +137,67 @@ export interface SubmoduloPersonal {
 export type ModulosPersonales = Record<string, ModuloPersonal>
 export type SubmodulosPersonales = Record<string, SubmoduloPersonal>
 
-// ------------------------------------DOMINIO PRODUCCION------------------------------------
-
-export interface Sector {
-  id_sector: number
-  nombre: string
+// ------------------------------------DOMINIO GENERALES------------------------------------
+export type Moneda = {
+  id_moneda: number
+  nombre?: string
+  estado?: boolean
 }
 
-export interface Producto {
-  id_producto: number
-  nombre: string
-  sectores: string[]
+export type Viaje = {
+  id_viaje: number
+  nombre?: string
+  id_moneda?: number
 }
 
-export interface Labor {
-  id_labor: number
-  nombre: string
+export type ViajeUsuario = {
+  id_viaje_usuario: number
+  id_viaje?: number
+  id_usuario_viajante?: string
+  nombre_usuario_viajante?: string
+  apellido_usuario_viajante?: string
+  legajo_usuario_viajante?: string
 }
 
-export interface Operario {
-  id?: string | number | null
-  id_operario?: number | string
-  nombre: string
-  apellido: string
-  nombre_completo?: string
-  legajo: number
-  grupo: string
-  grupo_display?: string
-  email?: string
-  dni?: number
-
-  detail?: string
-  nombre_labor?: string
-  nombre_creador?: string
-  apellido_creador?: string
-  id_tarea?: number
+export type Comentario = {
+  id_comentario: number
+  id_viaje_usuario?: number
+  nombre_usuario_creador?: string
+  apellido_usuario_creador?: string
+  fecha_creacion?: string
+  comentario?: string
 }
 
-export interface LaborProducto {
-  id_labor: number
-  nombre: string
-  sector: string
+export type Conceptos = {
+  id_concepto: number
+  nombre?: string
+  estado?: boolean
 }
 
-export interface FiltrosMonitoreo {
-  numeros_op: number[]
-  numeros_plano: string[]
-  operarios: string[]
-  sectores: string[]
+export type Viatico = {
+  id_viatico: number
+  id_viaje_usuario?: number
+  id_moneda?: number
+  monto_entregado?: number
+  monto_devuelto?: number
 }
 
-export interface TareaUsuario {
-  id_tarea: number
-  nombre_operario_seleccionado: string
-  apellido_operario_seleccionado: string
-  nombre_producto: string
-  nombre_labor: string
-  estado: string
-  cantidad: number
+export type MedioPago = {
+  id_medio_pago: number
+  nombre?: string
+  estado?: boolean
 }
 
-export interface DetalleTarea {
-  id_tarea: number
-  nombre_operario_seleccionado: string
-  apellido_operario_seleccionado: string
-  nombre_sector: string
-  numero_op: number
-  numero_plano: string
-  nombre_producto: string
-  nombre_labor: string
-  descripcion: string
-  tiempo_extra: string
-  estado: string
-  fecha_inicio?: Date
-  apellido_creador?: string
-  nombre_creador?: string
-  fecha_fin?: Date
-  tiempo_cronometrado?: string
-  tiempo_total?: string
-  cantidad: number
-  eventos?: EventoTareaFinalizada[]
-}
-
-export interface EventoTareaFinalizada {
-  fecha: Date
-  titulo: string
-}
-
-export interface Tarea {
-  id_tarea: number
-  nombre_operario_seleccionado: string
-  apellido_operario_seleccionado: string
-  nombre_producto: string
-  nombre_labor: string
-  cantidad: number
-  estado: string
+export type TicketUsuario = {
+  id_ticket: number
+  id_viaje_usuario?: number
+  nombre_imagen?: string
+  monto?: number
+  id_medio_pago?: number
+  id_moneda?: number
+  id_concepto?: number
+  estado_ticket_usuario?: string
+  estado_ticket_admin?: string
 }
 
 // ------------------------------------CONEXION Y CONTEXTO------------------------------------
