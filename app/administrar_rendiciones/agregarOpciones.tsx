@@ -1,6 +1,21 @@
 import { useState, useMemo } from "react"
 import { CircleMinus, CirclePlus } from "lucide-react"
-import { Boton, BotonIcono, TextScrollArea } from "@/components/components"
+import {
+  Boton,
+  BotonIcono,
+  SelectorConBusqueda,
+  TextScrollArea,
+} from "@/components/components"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import {
   useConceptos,
   useMediosPago,
@@ -13,6 +28,8 @@ type ToggleListItem = {
   nombre?: string
   estado?: boolean
 }
+
+type CreateEntityType = "moneda" | "viaje" | "medioPago" | "concepto"
 
 function SectionCard({
   title,
@@ -87,7 +104,9 @@ function ToggleListCard({
       <TextScrollArea
         tags={
           visibleList.length > 0
-            ? visibleList.map((item) => item.nombre ?? String(item.id))
+            ? visibleList.map(
+                (item) => item.nombre ?? String(item.id)
+              )
             : [emptyLabel]
         }
         extraClass="flex-1 min-h-0"
@@ -104,7 +123,7 @@ function ToggleListCard({
 
           return (
             <div className="flex w-full items-center justify-between gap-2">
-              <span className="truncate">{tag}</span>
+              <span className="truncate py-1">{tag}</span>
               <BotonIcono
                 icono={Icono}
                 iconClass={
@@ -112,7 +131,6 @@ function ToggleListCard({
                     ? "h-4 w-4 text-redcremona"
                     : "h-4 w-4 text-greencremona"
                 }
-                buttonClass="flex h-8 w-8 items-center justify-center hover:opacity-80"
                 onClick={async () => {
                   await onToggle(item)
                 }}
@@ -129,26 +147,148 @@ function ToggleListCard({
   )
 }
 
+function CreateEntityDialog({
+  open,
+  entity,
+  monedas,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean
+  entity: CreateEntityType | null
+  monedas: { id: number; nombre?: string }[]
+  onClose: () => void
+  onSubmit: (payload: {
+    nombre: string
+    id_moneda?: number
+  }) => Promise<void> | void
+}) {
+  const [nombre, setNombre] = useState("")
+  const [selectedMonedaId, setSelectedMonedaId] = useState("")
+
+  if (!entity) return null
+
+  const isViaje = entity === "viaje"
+  const titleMap: Record<CreateEntityType, string> = {
+    moneda: "Agregar moneda",
+    viaje: "Agregar viaje",
+    medioPago: "Agregar medio de pago",
+    concepto: "Agregar motivo",
+  }
+
+  const label = isViaje ? "Moneda predeterminada" : "Nombre"
+  const canSubmit =
+    nombre.trim().length > 0 && (!isViaje || selectedMonedaId !== "")
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          setNombre("")
+          setSelectedMonedaId("")
+          return
+        }
+
+        onClose()
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{titleMap[entity]}</DialogTitle>
+          <DialogDescription>
+            Complete los datos para crear este elemento.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4 py-2">
+          <label className="flex flex-col gap-1 text-sm text-foreground">
+            <span>Nombre</span>
+            <Input
+              value={nombre}
+              onChange={(event) => setNombre(event.target.value)}
+              placeholder={
+                entity === "moneda"
+                  ? "Ej: USD"
+                  : entity === "viaje"
+                    ? "Ej: FRANKFURT OCTUBRE 2025"
+                    : entity === "medioPago"
+                      ? "Ej: Efectivo"
+                      : "Ej: Viático"
+              }
+            />
+          </label>
+
+          {isViaje && (
+            <div className="flex flex-col gap-1 text-sm text-foreground">
+              <span>{label}</span>
+              <SelectorConBusqueda
+                placeholder="Seleccionar moneda"
+                searchPlaceholder="Buscar moneda..."
+                data={monedas.map((moneda) => ({
+                  id: String(moneda.id),
+                  nombre: moneda.nombre ?? `Moneda ${moneda.id}`,
+                }))}
+                value={selectedMonedaId}
+                onValueChange={(value) => setSelectedMonedaId(value)}
+                extraClass="w-full"
+              />
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="mt-2">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={!canSubmit}
+            onClick={async () => {
+              await onSubmit({
+                nombre: nombre.trim(),
+                ...(isViaje ? { id_moneda: Number(selectedMonedaId) } : {}),
+              })
+              onClose()
+            }}
+          >
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function AgregarOpciones() {
-  const { monedas, refresh, habilitarMoneda, deshabilitarMoneda } = useMonedas()
+  const { monedas, refresh, habilitarMoneda, deshabilitarMoneda, crearMoneda } =
+    useMonedas()
   const {
     viajes,
     refresh: refreshViajes,
     habilitarViaje,
     deshabilitarViaje,
+    crearViaje,
   } = useViajes()
   const {
     mediosPago,
     refresh: refreshMediosPago,
     habilitarMedioPago,
     deshabilitarMedioPago,
+    crearMedioPago,
   } = useMediosPago()
   const {
     conceptos,
     refresh: refreshConceptos,
     habilitarConcepto,
     deshabilitarConcepto,
+    crearConcepto,
   } = useConceptos()
+
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createEntity, setCreateEntity] = useState<CreateEntityType | null>(
+    null
+  )
 
   const monedaItems: ToggleListItem[] = monedas.map((moneda) => ({
     id: moneda.id_moneda,
@@ -210,43 +350,91 @@ export default function AgregarOpciones() {
     await refreshConceptos()
   }
 
+  const handleCreateSubmit = async (payload: {
+    nombre: string
+    id_moneda?: number
+  }) => {
+    if (!createEntity) return
+
+    switch (createEntity) {
+      case "moneda":
+        await crearMoneda(payload.nombre)
+        break
+      case "viaje":
+        if (payload.id_moneda === undefined) return
+        await crearViaje(payload.nombre, payload.id_moneda)
+        break
+      case "medioPago":
+        await crearMedioPago(payload.nombre)
+        break
+      case "concepto":
+        await crearConcepto(payload.nombre)
+        break
+    }
+  }
+
   return (
-    <div className="flex flex-1 flex-col gap-3 rounded">
-      <div className="flex min-h-200 flex-1 flex-col gap-3 xl:min-h-0 xl:flex-row">
-        <ToggleListCard
-          title="VIAJES"
-          buttonLabel="AGREGAR VIAJE"
-          items={viajeItems}
-          onToggle={toggleViaje}
-          onAdd={() => {}}
-        />
+    <>
+      <div className="flex flex-1 flex-col gap-3 rounded">
+        <div className="flex min-h-200 flex-1 flex-col gap-3 xl:min-h-0 xl:flex-row">
+          <ToggleListCard
+            title="VIAJES"
+            buttonLabel="AGREGAR VIAJE"
+            items={viajeItems}
+            onToggle={toggleViaje}
+            onAdd={() => {
+              setCreateEntity("viaje")
+              setCreateOpen(true)
+            }}
+          />
 
-        <ToggleListCard
-          title="MEDIO DE PAGO"
-          buttonLabel="AGREGAR MEDIO DE PAGO"
-          items={medioPagoItems}
-          onToggle={toggleMedioPago}
-          onAdd={() => {}}
-        />
+          <ToggleListCard
+            title="MEDIO DE PAGO"
+            buttonLabel="AGREGAR MEDIO DE PAGO"
+            items={medioPagoItems}
+            onToggle={toggleMedioPago}
+            onAdd={() => {
+              setCreateEntity("medioPago")
+              setCreateOpen(true)
+            }}
+          />
+        </div>
+
+        <div className="flex min-h-200 flex-1 flex-col gap-3 xl:min-h-0 xl:flex-row">
+          <ToggleListCard
+            title="DIVISAS"
+            buttonLabel="AGREGAR DIVISAS"
+            items={monedaItems}
+            onToggle={toggleMoneda}
+            onAdd={() => {
+              setCreateEntity("moneda")
+              setCreateOpen(true)
+            }}
+          />
+
+          <ToggleListCard
+            title="MOTIVOS"
+            buttonLabel="AGREGAR MOTIVO"
+            items={motivoItems}
+            onToggle={toggleConcepto}
+            onAdd={() => {
+              setCreateEntity("concepto")
+              setCreateOpen(true)
+            }}
+          />
+        </div>
       </div>
 
-      <div className="flex min-h-200 flex-1 flex-col gap-3 xl:min-h-0 xl:flex-row">
-        <ToggleListCard
-          title="DIVISAS"
-          buttonLabel="AGREGAR DIVISAS"
-          items={monedaItems}
-          onToggle={toggleMoneda}
-          onAdd={() => {}}
-        />
-
-        <ToggleListCard
-          title="MOTIVOS"
-          buttonLabel="AGREGAR MOTIVO"
-          items={motivoItems}
-          onToggle={toggleConcepto}
-          onAdd={() => {}}
-        />
-      </div>
-    </div>
+      <CreateEntityDialog
+        open={createOpen}
+        entity={createEntity}
+        monedas={monedas.map((moneda) => ({
+          id: moneda.id_moneda,
+          nombre: moneda.nombre,
+        }))}
+        onClose={() => setCreateOpen(false)}
+        onSubmit={handleCreateSubmit}
+      />
+    </>
   )
 }

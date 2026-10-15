@@ -140,6 +140,28 @@ export function useMonedas() {
     entityLabel: "moneda",
   })
 
+  const crearMoneda = useCallback(
+    async (nombre: string) => {
+      try {
+        const resp = await fetchWithConnectionCheck(
+          "/api/generales/monedas/crear",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre }),
+          }
+        )
+
+        if (!resp.ok) throw new Error("Error al crear moneda")
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [refresh]
+  )
+
   return {
     monedas,
     loading,
@@ -147,6 +169,7 @@ export function useMonedas() {
     refresh,
     habilitarMoneda: habilitarItem,
     deshabilitarMoneda: deshabilitarItem,
+    crearMoneda,
   }
 }
 
@@ -166,6 +189,28 @@ export function useViajes() {
     entityLabel: "viaje",
   })
 
+  const crearViaje = useCallback(
+    async (nombre_viaje: string, id_moneda: number) => {
+      try {
+        const resp = await fetchWithConnectionCheck(
+          "/api/generales/viajes/crear",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre_viaje, id_moneda }),
+          }
+        )
+
+        if (!resp.ok) throw new Error("Error al crear viaje")
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [refresh]
+  )
+
   return {
     viajes,
     loading,
@@ -173,6 +218,7 @@ export function useViajes() {
     refresh,
     habilitarViaje: habilitarItem,
     deshabilitarViaje: deshabilitarItem,
+    crearViaje,
   }
 }
 
@@ -192,6 +238,28 @@ export function useMediosPago() {
     entityLabel: "medio de pago",
   })
 
+  const crearMedioPago = useCallback(
+    async (nombre: string) => {
+      try {
+        const resp = await fetchWithConnectionCheck(
+          "/api/generales/medios-pago/crear",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre }),
+          }
+        )
+
+        if (!resp.ok) throw new Error("Error al crear medio de pago")
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [refresh]
+  )
+
   return {
     mediosPago,
     loading,
@@ -199,6 +267,7 @@ export function useMediosPago() {
     refresh,
     habilitarMedioPago: habilitarItem,
     deshabilitarMedioPago: deshabilitarItem,
+    crearMedioPago,
   }
 }
 
@@ -218,6 +287,28 @@ export function useConceptos() {
     entityLabel: "concepto",
   })
 
+  const crearConcepto = useCallback(
+    async (nombre: string) => {
+      try {
+        const resp = await fetchWithConnectionCheck(
+          "/api/generales/conceptos/crear",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nombre }),
+          }
+        )
+
+        if (!resp.ok) throw new Error("Error al crear concepto")
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [refresh]
+  )
+
   return {
     conceptos,
     loading,
@@ -225,5 +316,6 @@ export function useConceptos() {
     refresh,
     habilitarConcepto: habilitarItem,
     deshabilitarConcepto: deshabilitarItem,
+    crearConcepto,
   }
 }
