@@ -67,7 +67,9 @@ const mapViajantesFromSource = (source: unknown): Viajante[] => {
 
       return null
     })
-    .filter((item): item is Viajante => !!item && item.id_usuario_viajante !== "")
+    .filter(
+      (item): item is Viajante => !!item && item.id_usuario_viajante !== ""
+    )
 }
 
 function SectionCard({
@@ -598,6 +600,7 @@ function EditViajeDialog({
   onClose,
   onSubmit,
   onLoadDetalle,
+  onToggleStatus,
 }: {
   open: boolean
   viaje: Viaje | null
@@ -609,6 +612,9 @@ function EditViajeDialog({
     viajantes: Viajante[]
   }) => Promise<void> | void
   onLoadDetalle?: (id_viaje: number) => Promise<Record<string, unknown> | null>
+  onToggleStatus?: (
+    item: ToggleListItem
+  ) => Promise<boolean | void> | boolean | void
 }) {
   const [viajantes, setViajantes] = useState<Viajante[]>(() =>
     mapViajantesFromSource(viaje?.viajantes)
@@ -658,9 +664,7 @@ function EditViajeDialog({
           ? detalleRecord.moneda_nombre
           : typeof detalleRecord.moneda === "object" && detalleRecord.moneda
             ? String(
-                (
-                  detalleRecord.moneda as Record<string, unknown>
-                ).nombre ?? ""
+                (detalleRecord.moneda as Record<string, unknown>).nombre ?? ""
               )
             : ""
 
@@ -669,9 +673,8 @@ function EditViajeDialog({
         (nombreMonedaDetalle
           ? monedas.find(
               (moneda) =>
-                (moneda.nombre ?? "")
-                  .trim()
-                  .toLowerCase() === nombreMonedaDetalle.trim().toLowerCase()
+                (moneda.nombre ?? "").trim().toLowerCase() ===
+                nombreMonedaDetalle.trim().toLowerCase()
             )?.id_moneda
           : null)
 
@@ -745,6 +748,28 @@ function EditViajeDialog({
         </div>
 
         <DialogFooter className="mt-2">
+          <Button
+            className={
+              viaje.estado === false
+                ? "border-greencremona bg-greencremona/20 text-greencremona hover:bg-greencremona/30"
+                : "border-redcremona bg-redcremona/20 text-redcremona hover:bg-redcremona/30"
+            }
+            onClick={async () => {
+              if (!onToggleStatus) return
+
+              const result = await onToggleStatus({
+                id: viaje.id_viaje,
+                nombre: viaje.nombre,
+                estado: viaje.estado,
+              })
+
+              if (result === false) {
+                onClose()
+              }
+            }}
+          >
+            {viaje.estado === false ? "Habilitar viaje" : "Deshabilitar viaje"}
+          </Button>
           <Button type="button" variant="outline" onClick={onClose}>
             Cancelar
           </Button>
@@ -853,6 +878,27 @@ export default function AgregarOpciones() {
       await habilitarViaje(item.id)
     }
     await refreshViajes()
+  }
+
+  const toggleViajeInDialog = async (item: ToggleListItem) => {
+    const actionSucceeded = item.estado
+      ? await deshabilitarViaje(item.id)
+      : await habilitarViaje(item.id)
+
+    if (!actionSucceeded) {
+      setEditOpen(false)
+      setEditViaje(null)
+      return false
+    }
+
+    setEditViaje((currentViaje) => {
+      if (!currentViaje || currentViaje.id_viaje !== item.id)
+        return currentViaje
+      return { ...currentViaje, estado: item.estado ? false : true }
+    })
+
+    await refreshViajes()
+    return true
   }
 
   const toggleMedioPago = async (item: ToggleListItem) => {
@@ -993,6 +1039,7 @@ export default function AgregarOpciones() {
           nombre: moneda.nombre,
         }))}
         onLoadDetalle={obtenerDetalleViaje}
+        onToggleStatus={toggleViajeInDialog}
         onClose={() => {
           setEditOpen(false)
           setEditViaje(null)
