@@ -211,6 +211,73 @@ export function useViajes() {
     [refresh]
   )
 
+  const editarViajantes = useCallback(
+    async (payload: {
+      id_viaje: number
+      viajantes: Array<{
+        id_usuario_viajante: string
+        nombre_usuario_viajante: string
+        apellido_usuario_viajante: string
+        legajo_usuario_viajante: string
+      }>
+    }) => {
+      try {
+        const resp = await fetchWithConnectionCheck(
+          "/api/generales/viajes/editar-viajantes",
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        )
+
+        if (!resp.ok) throw new Error("Error al editar viajantes")
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [refresh]
+  )
+
+  const editarMoneda = useCallback(
+    async (payload: { id_viaje: number; id_moneda: number }) => {
+      try {
+        const resp = await fetchWithConnectionCheck(
+          "/api/generales/viajes/editar-moneda",
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        )
+
+        if (!resp.ok) throw new Error("Error al editar moneda del viaje")
+        await refresh()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [refresh]
+  )
+
+  const obtenerDetalleViaje = useCallback(async (id_viaje: number) => {
+    try {
+      const resp = await fetchWithConnectionCheck(
+        `/api/generales/viajes/detalles?id_viaje=${id_viaje}`
+      )
+
+      if (!resp.ok) throw new Error("Error al obtener detalle del viaje")
+
+      const body = await resp.json()
+      return (body?.data ?? body) as Record<string, unknown> | null
+    } catch {
+      return null
+    }
+  }, [])
+
   return {
     viajes,
     loading,
@@ -219,6 +286,9 @@ export function useViajes() {
     habilitarViaje: habilitarItem,
     deshabilitarViaje: deshabilitarItem,
     crearViaje,
+    editarViajantes,
+    editarMoneda,
+    obtenerDetalleViaje,
   }
 }
 

@@ -150,6 +150,12 @@ export type Viaje = {
   nombre?: string
   id_moneda?: number
   estado?: boolean
+  viajantes?: Array<{
+    id_usuario_viajante?: string
+    nombre_usuario_viajante?: string
+    apellido_usuario_viajante?: string
+    legajo_usuario_viajante?: string
+  }>
 }
 
 export type ViajeUsuario = {
