@@ -1,8 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { SelectorConBusqueda, Boton, TextScrollArea } from "@/components/components"
-
+import {
+  SelectorConBusqueda,
+  Boton,
+  TextScrollArea,
+} from "@/components/components"
 
 const VIAJANTES_MOCK = [
   "Ivan Pennacchietti",
@@ -38,33 +41,48 @@ const VIAJES_MOCK = [
     fechaSalida: "31/03/2026",
     fechaRegreso: "07/04/2026",
     estado: "En revisión",
-  }
+  },
 ]
 
 const COMENTARIOS_MOCK = [
   {
     id: 1,
     viajeId: 1,
-    texto: "Comentario de ejemplo para el viaje 1"
+    texto: "Comentario de ejemplo para el viaje 1",
   },
   {
     id: 2,
     viajeId: 2,
-    texto: "Comentario de ejemplo para el viaje 2"
-  }
+    texto: "Comentario de ejemplo para el viaje 2",
+  },
 ]
 
 const RECIBOS_MOCK = [
   {
     id: 1,
     viajeId: 1,
-    texto: "Recibo de ejemplo para el viaje 1"
+    texto: "Recibo de ejemplo para el viaje 1",
   },
   {
     id: 2,
     viajeId: 2,
-    texto: "Recibo de ejemplo para el viaje 2"
-  }
+    texto: "Recibo de ejemplo para el viaje 2",
+  },
+]
+
+const EFECTIVO_ENTREGADO_MOCK = [
+  {
+    id: 1,
+    viajeId: 1,
+    monto: 1000,
+    moneda: "USD",
+  },
+  {
+    id: 2,
+    viajeId: 2,
+    monto: 500,
+    moneda: "ARS",
+  },
 ]
 
 const viajesTags = VIAJES_MOCK.map((v) => v.destino)
@@ -78,8 +96,13 @@ const comentariosSubtitles = COMENTARIOS_MOCK.map(
 )
 
 const recibosTags = RECIBOS_MOCK.map((r) => r.texto)
-const recibosSubtitles = RECIBOS_MOCK.map(
-  (r) => `Viaje ID: ${r.viajeId}`
+const recibosSubtitles = RECIBOS_MOCK.map((r) => `Viaje ID: ${r.viajeId}`)
+
+const efectivoEntregadoTags = EFECTIVO_ENTREGADO_MOCK.map(
+  (e) => `${e.monto} ${e.moneda}`
+)
+const efectivoEntregadoSubtitles = EFECTIVO_ENTREGADO_MOCK.map(
+  (e) => `Viaje ID: ${e.viajeId}`
 )
 
 export default function VerRendiciones() {
@@ -87,6 +110,8 @@ export default function VerRendiciones() {
   const [viajeSeleccionado, setViajeSeleccionado] = useState<number>()
   const [comentarioSeleccionado, setComentarioSeleccionado] = useState<number>()
   const [reciboSeleccionado, setReciboSeleccionado] = useState<number>()
+  const [efectivoEntregadoSeleccionado, setEfectivoEntregadoSeleccionado] =
+    useState<number>()
 
   return (
     <div className="flex flex-1 flex-col gap-3 xl:flex-row">
@@ -112,18 +137,20 @@ export default function VerRendiciones() {
 
         <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
           <div className="flex flex-row items-center justify-between gap-3">
-            <h1 className="font-semibold">COMENTARIOS</h1>
+            <h1 className="font-semibold">EFECTIVO ENTREGADO POR TESORERIA</h1>
             <Boton
               extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"
-              placeholder="AGREGAR COMENTARIO"
+              placeholder="AGREGAR EFECTIVO"
               onClick={undefined}
             />
           </div>
           <TextScrollArea
-            tags={comentariosTags}
-            subtitles={comentariosSubtitles}
-            selectedIndex={comentarioSeleccionado}
-            onTagClick={(_tag, index) => setComentarioSeleccionado(index)}
+            tags={efectivoEntregadoTags}
+            subtitles={efectivoEntregadoSubtitles}
+            selectedIndex={efectivoEntregadoSeleccionado}
+            onTagClick={(_tag, index) =>
+              setEfectivoEntregadoSeleccionado(index)
+            }
             extraClass="flex-1 min-h-0"
           />
         </div>

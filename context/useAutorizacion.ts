@@ -55,7 +55,9 @@ export function useAutorizacion() {
     () => ({
       acceso: {
         cargarRendiciones: tienePermiso(AUTORIZACIONES.CARGAR_RENDICIONES),
-        administrarRendiciones: tienePermiso(AUTORIZACIONES.ADMINISTRAR_RENDICIONES),
+        administrarRendiciones: tienePermiso(
+          AUTORIZACIONES.ADMINISTRAR_RENDICIONES
+        ),
       },
     }),
     [tienePermiso]

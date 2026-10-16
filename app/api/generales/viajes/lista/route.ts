@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getBearerTokenFromRequest } from "@/app/api/_utils/authApi"
-const API_BASE_URL = process.env.API_GENERALES_URL ?? "http://192.168.20.151:8205"
+const API_BASE_URL =
+  process.env.API_GENERALES_URL ?? "http://192.168.20.151:8205"
 
 export async function GET(request: Request) {
   const token = getBearerTokenFromRequest(request)

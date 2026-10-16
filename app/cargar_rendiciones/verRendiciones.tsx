@@ -98,15 +98,20 @@ const comentariosSubtitles = COMENTARIOS_MOCK.map(
 const recibosTags = RECIBOS_MOCK.map((r) => r.texto)
 const recibosSubtitles = RECIBOS_MOCK.map((r) => `Viaje ID: ${r.viajeId}`)
 
-const efectivoEntregadoTags = EFECTIVO_ENTREGADO_MOCK.map((e) => `${e.monto} ${e.moneda}`)
-const efectivoEntregadoSubtitles = EFECTIVO_ENTREGADO_MOCK.map((e) => `Viaje ID: ${e.viajeId}`)
+const efectivoEntregadoTags = EFECTIVO_ENTREGADO_MOCK.map(
+  (e) => `${e.monto} ${e.moneda}`
+)
+const efectivoEntregadoSubtitles = EFECTIVO_ENTREGADO_MOCK.map(
+  (e) => `Viaje ID: ${e.viajeId}`
+)
 
 export default function VerRendiciones() {
   const [rendicion, setRendicion] = useState("")
   const [viajeSeleccionado, setViajeSeleccionado] = useState<number>()
   const [comentarioSeleccionado, setComentarioSeleccionado] = useState<number>()
   const [reciboSeleccionado, setReciboSeleccionado] = useState<number>()
-  const [efectivoEntregadoSeleccionado, setEfectivoEntregadoSeleccionado] = useState<number>()
+  const [efectivoEntregadoSeleccionado, setEfectivoEntregadoSeleccionado] =
+    useState<number>()
 
   return (
     <div className="flex flex-1 flex-col gap-3 xl:flex-row">
@@ -143,7 +148,9 @@ export default function VerRendiciones() {
             tags={efectivoEntregadoTags}
             subtitles={efectivoEntregadoSubtitles}
             selectedIndex={efectivoEntregadoSeleccionado}
-            onTagClick={(_tag, index) => setEfectivoEntregadoSeleccionado(index)}
+            onTagClick={(_tag, index) =>
+              setEfectivoEntregadoSeleccionado(index)
+            }
             extraClass="flex-1 min-h-0"
           />
         </div>
