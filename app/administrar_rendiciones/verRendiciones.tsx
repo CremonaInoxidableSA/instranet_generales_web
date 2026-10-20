@@ -1,14 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Pencil } from "lucide-react"
+import { Check, Pencil } from "lucide-react"
 import {
   Boton,
+  BotonIcono,
   SelectorConBusqueda,
   TextScrollArea,
 } from "@/components/components"
 import type { Comentario, Viatico } from "@/types/types"
-import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -758,8 +758,7 @@ export default function VerRendiciones() {
           <div className="flex flex-col justify-between">
             <div className="flex flex-1 flex-row gap-3">
               <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
-              <Button
-                type="button"
+              <Boton
                 onClick={() => {
                   setFiltroInput("")
                   setFiltro("")
@@ -767,7 +766,7 @@ export default function VerRendiciones() {
                   setDialogAbierto(true)
                 }}
                 disabled={loadingEmpleados}
-                className="rounded border-2 border-bluecremona bg-bluecremona/20 text-sm text-bluecremona hover:bg-bluecremona/30"
+                extraClass="rounded border-2 border-bluecremona bg-bluecremona/20 text-sm text-bluecremona hover:bg-bluecremona/30"
               >
                 <span>
                   {loadingEmpleados
@@ -776,7 +775,7 @@ export default function VerRendiciones() {
                       ? `${empleadoSeleccionadoInfo.nombre} ${empleadoSeleccionadoInfo.apellido}`.trim()
                       : "Seleccionar viajante"}
                 </span>
-              </Button>
+              </Boton>
             </div>
             {empleadoSeleccionadoInfo && (
               <p className="text-xs opacity-70">
@@ -832,32 +831,30 @@ export default function VerRendiciones() {
                 return `${viatico.moneda}: $${montoEntregado.toLocaleString("es-AR")} / Devuelto: $${montoDevuelto.toLocaleString("es-AR")}`
               })}
               extraClass="flex-1 min-h-0"
+              rowClassName={(_tag, index) =>
+                viaticos[index]?.estado ? "bg-greencremona/10" : ""
+              }
               renderItem={({ tag, index }) => {
                 const viaticoActual = viaticos[index]
                 const estaAprobado = Boolean(viaticoActual?.estado)
+                const Icono = estaAprobado ? Check : Pencil
 
                 return (
-                  <div
-                    className={`flex w-full flex-1 items-center justify-between gap-2 rounded ${estaAprobado ? "bg-greencremona/10" : ""}`}
-                  >
+                  <div className="flex w-full flex-1 items-center justify-between gap-2">
                     <div className="flex flex-1 py-2">
                       <span>{tag}</span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
+                    <BotonIcono
                       disabled={estaAprobado}
-                      className="h-8 w-8 rounded-full text-bluecremona hover:bg-bluecremona/10 disabled:cursor-not-allowed disabled:opacity-0"
+                      icono={Icono}
+                      buttonClass="text-bluecremona disabled:pointer-events-none disabled:opacity-0"
                       aria-label={`Editar viático ${index + 1}`}
                       onClick={(event) => {
                         event.stopPropagation()
                         if (estaAprobado) return
                         abrirEdicionViatico(viaticoActual)
                       }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    />
                   </div>
                 )
               }}
@@ -1020,16 +1017,10 @@ export default function VerRendiciones() {
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogViaticoAbierto(false)}
-            >
+            <Boton onClick={() => setDialogViaticoAbierto(false)}>
               Cancelar
-            </Button>
-            <Button type="button" onClick={guardarViatico}>
-              Guardar
-            </Button>
+            </Boton>
+            <Boton onClick={guardarViatico}>Guardar</Boton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1118,19 +1109,11 @@ export default function VerRendiciones() {
           )}
 
           <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogViaticoEdicionAbierto(false)}
-            >
+            <Boton onClick={() => setDialogViaticoEdicionAbierto(false)}>
               Cancelar
-            </Button>
-            <Button type="button" variant="secondary" onClick={aprobarViatico}>
-              Aprobar
-            </Button>
-            <Button type="button" onClick={guardarViaticoEditado}>
-              Guardar
-            </Button>
+            </Boton>
+            <Boton onClick={aprobarViatico}>Aprobar</Boton>
+            <Boton onClick={guardarViaticoEditado}>Guardar</Boton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1163,16 +1146,10 @@ export default function VerRendiciones() {
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogComentarioAbierto(false)}
-            >
+            <Boton onClick={() => setDialogComentarioAbierto(false)}>
               Cancelar
-            </Button>
-            <Button type="button" onClick={guardarComentario}>
-              Guardar
-            </Button>
+            </Boton>
+            <Boton onClick={guardarComentario}>Guardar</Boton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1208,20 +1185,18 @@ export default function VerRendiciones() {
                 placeholder="Buscar por nombre, apellido o legajo"
                 className="border border-background6 bg-background3"
               />
-              <Button
-                type="button"
+              <Boton
                 onClick={aplicarFiltro}
-                className="border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+                extraClass="border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
               >
                 Filtrar
-              </Button>
-              <Button
-                type="button"
+              </Boton>
+              <Boton
                 onClick={limpiarFiltro}
-                className="border-redcremona bg-redcremona/20 text-redcremona hover:bg-redcremona/30"
+                extraClass="border-redcremona bg-redcremona/20 text-redcremona hover:bg-redcremona/30"
               >
                 Limpiar
-              </Button>
+              </Boton>
             </div>
 
             <div className="overflow-hidden rounded border border-background6">
@@ -1289,17 +1264,13 @@ export default function VerRendiciones() {
                 Página {paginaActual + 1} de {totalPaginas}
               </p>
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
+                <Boton
                   onClick={() => setPagina((actual) => Math.max(actual - 1, 0))}
                   disabled={paginaActual === 0}
                 >
                   Anterior
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
+                </Boton>
+                <Boton
                   onClick={() =>
                     setPagina((actual) =>
                       Math.min(actual + 1, totalPaginas - 1)
@@ -1308,19 +1279,13 @@ export default function VerRendiciones() {
                   disabled={paginaActual >= totalPaginas - 1}
                 >
                   Siguiente
-                </Button>
+                </Boton>
               </div>
             </div>
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDialogAbierto(false)}
-            >
-              Cancelar
-            </Button>
+            <Boton onClick={() => setDialogAbierto(false)}>Cancelar</Boton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

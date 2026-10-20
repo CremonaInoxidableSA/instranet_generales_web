@@ -37,21 +37,26 @@ export function Boton({
   placeholder,
   onClick,
   disabled = false,
+  children,
+  type = "button",
 }: {
   extraClass?: string
   placeholder?: string
   disabled?: boolean
-  onClick?: () => void
+  onClick?: React.MouseEventHandler<HTMLButtonElement>
+  children?: React.ReactNode
+  type?: "button" | "submit" | "reset"
 }) {
   return (
     <Button
+      type={type}
       className={`rounded border-2 ${extraClass} ${
         disabled ? "cursor-not-allowed! opacity-50" : "cursor-pointer"
       }`}
       onClick={onClick}
       disabled={disabled}
     >
-      {placeholder}
+      {children ?? placeholder}
     </Button>
   )
 }
@@ -68,7 +73,7 @@ export function BotonIcono({
   icono: LucideIcon
   buttonClass?: string
   iconClass?: string
-  onClick?: () => void
+  onClick?: React.MouseEventHandler<HTMLButtonElement>
   disabled?: boolean
   ariaLabel?: string
   title?: string
@@ -422,6 +427,7 @@ export const TextScrollArea = React.memo(function TextScrollArea({
   withHover = true,
   withPointer = true,
   renderItem,
+  rowClassName,
 }: {
   tags: string[]
   subtitles?: string[]
@@ -439,6 +445,7 @@ export const TextScrollArea = React.memo(function TextScrollArea({
     index: number
     isSelected: boolean
   }) => React.ReactNode
+  rowClassName?: string | ((tag: string, index: number) => string)
 }) {
   return (
     <div className={`flex min-h-0 flex-1 flex-col rounded ${extraClass || ""}`}>
@@ -468,6 +475,11 @@ export const TextScrollArea = React.memo(function TextScrollArea({
             const tag = tags[index]
             const subtitle = subtitles?.[index]
             const isSelected = selectedIndex === index
+            const rowClass =
+              typeof rowClassName === "function"
+                ? rowClassName(tag, index)
+                : rowClassName
+
             const rowContent = renderItem ? (
               renderItem({ tag, subtitle, index, isSelected })
             ) : (
@@ -490,9 +502,9 @@ export const TextScrollArea = React.memo(function TextScrollArea({
             )
 
             return (
-              <div key={`${tag}-${index}`} className="mr-4">
+              <div key={`${tag}-${index}`} className="mr-4 w-full">
                 <div
-                  className={`flex w-full flex-row items-center rounded px-2 ${withHover ? "hover:bg-foreground/10" : ""} ${isSelected ? "bg-foreground/10" : ""}`}
+                  className={`mx-1 flex w-[calc(100%-0.5rem)] flex-row items-center rounded px-2 ${withHover ? "hover:bg-foreground/10" : ""} ${isSelected ? "bg-foreground/10" : ""} ${rowClass ?? ""}`}
                 >
                   {rowContent}
                 </div>
