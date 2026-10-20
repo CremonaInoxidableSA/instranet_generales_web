@@ -48,9 +48,10 @@ type ComentarioDelViaje = Pick<
 
 type ViaticoDelViaje = Pick<
   Viatico,
-  "id_viatico" | "monto_entregado" | "monto_devuelto" | "estado"
+  "id_viatico" | "monto_entregado" | "monto_devuelto"
 > & {
   moneda: string
+  estado: boolean
 }
 
 const mapEmpleado = (item: Record<string, unknown>): Empleado => ({
@@ -148,6 +149,14 @@ export default function VerRendiciones() {
   const [comentarios, setComentarios] = useState<ComentarioDelViaje[]>([])
   const [viaticos, setViaticos] = useState<ViaticoDelViaje[]>([])
   const [dialogAbierto, setDialogAbierto] = useState(false)
+  const [dialogViaticoAbierto, setDialogViaticoAbierto] = useState(false)
+  const [dialogComentarioAbierto, setDialogComentarioAbierto] = useState(false)
+  const [textoComentario, setTextoComentario] = useState("")
+  const [nuevoViatico, setNuevoViatico] = useState({
+    id_moneda: "",
+    monto_entregado: "",
+    monto_devuelto: "",
+  })
   const [filtroInput, setFiltroInput] = useState("")
   const [filtro, setFiltro] = useState("")
   const [pagina, setPagina] = useState(0)
@@ -185,6 +194,152 @@ export default function VerRendiciones() {
     setFiltroInput("")
     setFiltro("")
     setPagina(0)
+  }
+
+  const viajeActual = viajes[viajeSeleccionado ?? -1] ?? null
+  const idViajeUsuarioActual = viajeActual?.id_viaje_usuario
+
+  const guardarComentario = async () => {
+    if (!idViajeUsuarioActual) {
+      toast.add({
+        type: "error",
+        description: "Seleccioná un viaje antes de agregar un comentario.",
+      })
+      return
+    }
+
+    const comentario = textoComentario.trim()
+    if (!comentario) {
+      toast.add({
+        type: "error",
+        description: "Escribí un comentario antes de guardar.",
+      })
+      return
+    }
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        "/api/generales/comentarios/crear",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id_viaje_usuario: Number(idViajeUsuarioActual),
+            comentario,
+          }),
+        }
+      )
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.detail === "string"
+            ? payload.detail
+            : "No se pudo crear el comentario"
+        )
+      }
+
+      setComentarios((actual) => [
+        {
+          nombre_usuario_creador: "",
+          apellido_usuario_creador: "",
+          comentario,
+          fecha_creacion: new Date().toISOString(),
+        },
+        ...actual,
+      ])
+      setTextoComentario("")
+      setDialogComentarioAbierto(false)
+      toast.add({
+        type: "success",
+        description: "Comentario agregado correctamente.",
+      })
+    } catch {
+      toast.add({
+        type: "error",
+        description: "No se pudo guardar el comentario.",
+      })
+    }
+  }
+
+  const guardarViatico = async () => {
+    if (!idViajeUsuarioActual) {
+      toast.add({
+        type: "error",
+        description: "Seleccioná un viaje antes de agregar el viático.",
+      })
+      return
+    }
+
+    const idMoneda = Number(nuevoViatico.id_moneda)
+    const montoEntregado = Number(nuevoViatico.monto_entregado || 0)
+    const montoDevuelto = Number(nuevoViatico.monto_devuelto || 0)
+
+    if (!idMoneda || !Number.isFinite(idMoneda)) {
+      toast.add({
+        type: "error",
+        description: "Seleccioná una moneda válida.",
+      })
+      return
+    }
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        "/api/generales/viaticos/crear",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id_viaje_usuario: Number(idViajeUsuarioActual),
+            id_moneda: idMoneda,
+            monto_entregado: montoEntregado,
+            monto_devuelto: montoDevuelto,
+          }),
+        }
+      )
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.detail === "string"
+            ? payload.detail
+            : "No se pudo crear el viático"
+        )
+      }
+
+      const monedaLabel = nuevoViatico.id_moneda
+      setViaticos((actual) => [
+        {
+          id_viatico: Date.now(),
+          moneda: monedaLabel,
+          monto_entregado: montoEntregado,
+          monto_devuelto: montoDevuelto,
+          estado: false,
+        },
+        ...actual,
+      ])
+      setNuevoViatico({
+        id_moneda: "",
+        monto_entregado: "",
+        monto_devuelto: "",
+      })
+      setDialogViaticoAbierto(false)
+      toast.add({
+        type: "success",
+        description: "Viático agregado correctamente.",
+      })
+    } catch {
+      toast.add({
+        type: "error",
+        description: "No se pudo guardar el viático.",
+      })
+    }
   }
 
   useEffect(() => {
@@ -469,7 +624,11 @@ export default function VerRendiciones() {
             <Boton
               extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"
               placeholder="AGREGAR EFECTIVO"
-              onClick={undefined}
+              disabled={!idViajeUsuarioActual}
+              onClick={() => {
+                if (!idViajeUsuarioActual) return
+                setDialogViaticoAbierto(true)
+              }}
             />
           </div>
           {loadingViaticos ? (
@@ -535,7 +694,11 @@ export default function VerRendiciones() {
             <Boton
               extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"
               placeholder="AGREGAR COMENTARIO"
-              onClick={undefined}
+              disabled={!idViajeUsuarioActual}
+              onClick={() => {
+                if (!idViajeUsuarioActual) return
+                setDialogComentarioAbierto(true)
+              }}
             />
           </div>
           {loadingComentarios ? (
@@ -567,6 +730,133 @@ export default function VerRendiciones() {
           )}
         </div>
       </div>
+
+      <Dialog
+        open={dialogViaticoAbierto}
+        onOpenChange={(nextOpen) => {
+          setDialogViaticoAbierto(nextOpen)
+          if (!nextOpen) {
+            setNuevoViatico({
+              id_moneda: "",
+              monto_entregado: "",
+              monto_devuelto: "",
+            })
+          }
+        }}
+      >
+        <DialogContent className="z-100 bg-background2 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar viático</DialogTitle>
+            <DialogDescription>
+              Ingresá el monto entregado y la moneda para este viaje.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">ID de moneda</label>
+              <Input
+                type="number"
+                value={nuevoViatico.id_moneda}
+                onChange={(event) =>
+                  setNuevoViatico((actual) => ({
+                    ...actual,
+                    id_moneda: event.target.value,
+                  }))
+                }
+                className="border border-background6 bg-background3"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Monto entregado</label>
+                <Input
+                  type="number"
+                  value={nuevoViatico.monto_entregado}
+                  onChange={(event) =>
+                    setNuevoViatico((actual) => ({
+                      ...actual,
+                      monto_entregado: event.target.value,
+                    }))
+                  }
+                  className="border border-background6 bg-background3"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Monto devuelto</label>
+                <Input
+                  type="number"
+                  value={nuevoViatico.monto_devuelto}
+                  onChange={(event) =>
+                    setNuevoViatico((actual) => ({
+                      ...actual,
+                      monto_devuelto: event.target.value,
+                    }))
+                  }
+                  className="border border-background6 bg-background3"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogViaticoAbierto(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" onClick={guardarViatico}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={dialogComentarioAbierto}
+        onOpenChange={(nextOpen) => {
+          setDialogComentarioAbierto(nextOpen)
+          if (!nextOpen) {
+            setTextoComentario("")
+          }
+        }}
+      >
+        <DialogContent className="z-100 bg-background2 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Agregar comentario</DialogTitle>
+            <DialogDescription>
+              Escribí el comentario para el viaje seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3 py-2">
+            <textarea
+              value={textoComentario}
+              onChange={(event) => setTextoComentario(event.target.value)}
+              rows={5}
+              placeholder="Escribí el comentario..."
+              className="min-h-28 w-full rounded-md border border-background6 bg-background3 px-3 py-2 text-sm outline-none focus:border-bluecremona"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogComentarioAbierto(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" onClick={guardarComentario}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={dialogAbierto}
