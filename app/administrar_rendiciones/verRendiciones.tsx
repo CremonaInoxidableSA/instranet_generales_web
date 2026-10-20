@@ -1,11 +1,26 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { Boton, TextScrollArea } from "@/components/components"
+import { Button } from "@/components/ui/button"
 import {
-  SelectorConBusqueda,
-  Boton,
-  TextScrollArea,
-} from "@/components/components"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
 import { fetchWithConnectionCheck } from "@/lib/connectionManager"
 import { toast } from "@/components/ui/toast"
 
@@ -25,7 +40,10 @@ const mapEmpleado = (item: Record<string, unknown>): Empleado => ({
   id: String(item.id_usuario ?? item.id ?? "").trim(),
   nombre: String(item.nombre ?? ""),
   apellido: String(item.apellido ?? ""),
-  legajo: item.legajo === null || item.legajo === undefined ? "" : String(item.legajo),
+  legajo:
+    item.legajo === null || item.legajo === undefined
+      ? ""
+      : String(item.legajo),
 })
 
 const mapViajeDelEmpleado = (
@@ -42,6 +60,14 @@ const mapViajeDelEmpleado = (
   }
 }
 
+const FILAS_POR_PAGINA = 6
+
+const normalizar = (texto: string) =>
+  texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+
 export default function VerRendiciones() {
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("")
@@ -51,15 +77,61 @@ export default function VerRendiciones() {
   const [reciboSeleccionado, setReciboSeleccionado] = useState<number>()
   const [efectivoEntregadoSeleccionado, setEfectivoEntregadoSeleccionado] =
     useState<number>()
-  const [loadingEmpleados, setLoadingEmpleados] = useState(true)
+  const [loadingEmpleados, setLoadingEmpleados] = useState(false)
   const [loadingViajes, setLoadingViajes] = useState(false)
+  const [dialogAbierto, setDialogAbierto] = useState(false)
+  const [filtroInput, setFiltroInput] = useState("")
+  const [filtro, setFiltro] = useState("")
+  const [pagina, setPagina] = useState(0)
+
+  const empleadosFiltrados = useMemo(() => {
+    const textoBusqueda = normalizar(filtro.trim())
+
+    if (!textoBusqueda) {
+      return empleados
+    }
+
+    return empleados.filter((empleado) =>
+      normalizar(
+        `${empleado.nombre} ${empleado.apellido} ${empleado.legajo}`.trim()
+      ).includes(textoBusqueda)
+    )
+  }, [empleados, filtro])
+
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(empleadosFiltrados.length / FILAS_POR_PAGINA)
+  )
+  const paginaActual = Math.min(pagina, totalPaginas - 1)
+  const filasPagina = empleadosFiltrados.slice(
+    paginaActual * FILAS_POR_PAGINA,
+    (paginaActual + 1) * FILAS_POR_PAGINA
+  )
+
+  const aplicarFiltro = () => {
+    setPagina(0)
+    setFiltro(filtroInput)
+  }
+
+  const limpiarFiltro = () => {
+    setFiltroInput("")
+    setFiltro("")
+    setPagina(0)
+  }
 
   useEffect(() => {
+    if (!dialogAbierto) {
+      return
+    }
+
     let cancelled = false
 
     const cargarEmpleados = async () => {
       try {
-        const response = await fetchWithConnectionCheck("/api/auth/lista-empleados")
+        setLoadingEmpleados(true)
+        const response = await fetchWithConnectionCheck(
+          "/api/auth/lista-empleados"
+        )
 
         if (!response.ok) {
           throw new Error("Error al obtener empleados")
@@ -99,7 +171,7 @@ export default function VerRendiciones() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [dialogAbierto])
 
   useEffect(() => {
     if (!empleadoSeleccionado) {
@@ -157,21 +229,10 @@ export default function VerRendiciones() {
     }
   }, [empleadoSeleccionado])
 
-  const empleadoSelectorData = useMemo(
-    () =>
-      empleados.map((empleado) => ({
-        id: empleado.id,
-        nombre:
-          [empleado.nombre, empleado.apellido].filter(Boolean).join(" ").trim() ||
-          empleado.legajo ||
-          "Sin nombre",
-      })),
-    [empleados]
-  )
-
   const empleadoSeleccionadoInfo = useMemo(
     () =>
-      empleados.find((empleado) => empleado.id === empleadoSeleccionado) ?? null,
+      empleados.find((empleado) => empleado.id === empleadoSeleccionado) ??
+      null,
     [empleados, empleadoSeleccionado]
   )
 
@@ -182,24 +243,38 @@ export default function VerRendiciones() {
     <div className="flex flex-1 flex-col gap-3 xl:flex-row">
       <div className="flex flex-1 flex-col gap-3 rounded">
         <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
-          <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
-          <SelectorConBusqueda
-            extraClass="w-full"
-            placeholder={loadingEmpleados ? "Cargando empleados..." : "Seleccionar viajante"}
-            searchPlaceholder="Buscar viajante..."
-            data={empleadoSelectorData}
-            keyId="id"
-            keyLabel="nombre"
-            value={empleadoSeleccionado}
-            onValueChange={(nextValue) => {
-              setEmpleadoSeleccionado(nextValue)
-              if (!nextValue) {
-                setViajes([])
-                setViajeSeleccionado(undefined)
-              }
-            }}
-            disabled={loadingEmpleados}
-          />
+          <div className="flex flex-col justify-between">
+            <div className="flex flex-1 flex-row gap-3">
+              <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
+              <Button
+                type="button"
+                onClick={() => {
+                  setFiltroInput("")
+                  setFiltro("")
+                  setPagina(0)
+                  setDialogAbierto(true)
+                }}
+                disabled={loadingEmpleados}
+                className="rounded border-2 border-bluecremona bg-bluecremona/20 text-sm text-bluecremona hover:bg-bluecremona/30"
+              >
+                <span>
+                  {loadingEmpleados
+                    ? "Cargando empleados..."
+                    : empleadoSeleccionadoInfo
+                      ? `${empleadoSeleccionadoInfo.nombre} ${empleadoSeleccionadoInfo.apellido}`.trim()
+                      : "Seleccionar viajante"}
+                </span>
+              </Button>
+            </div>
+            {empleadoSeleccionadoInfo && (
+              <p className="text-xs opacity-70">
+                Viajante seleccionado: {empleadoSeleccionadoInfo.legajo}
+                {empleadoSeleccionadoInfo.legajo ? " · " : ""}
+                {empleadoSeleccionadoInfo.nombre}{" "}
+                {empleadoSeleccionadoInfo.apellido}
+              </p>
+            )}
+          </div>
 
           {loadingViajes ? (
             <div className="flex flex-1 items-center justify-center rounded border border-dashed border-background6 p-3 text-sm opacity-60">
@@ -293,6 +368,154 @@ export default function VerRendiciones() {
           />
         </div>
       </div>
+
+      <Dialog
+        open={dialogAbierto}
+        onOpenChange={(nextOpen) => {
+          setDialogAbierto(nextOpen)
+
+          if (!nextOpen) {
+            setFiltroInput("")
+            setFiltro("")
+            setPagina(0)
+          }
+        }}
+      >
+        <DialogContent className="z-100 bg-background2 sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Seleccionar viajante</DialogTitle>
+            <DialogDescription>
+              Elija el viajante para cargar sus viajes asociados.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <Input
+                value={filtroInput}
+                onChange={(event) => setFiltroInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") aplicarFiltro()
+                }}
+                placeholder="Buscar por nombre, apellido o legajo"
+                className="border border-background6 bg-background3"
+              />
+              <Button
+                type="button"
+                onClick={aplicarFiltro}
+                className="border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+              >
+                Filtrar
+              </Button>
+              <Button
+                type="button"
+                onClick={limpiarFiltro}
+                className="border-redcremona bg-redcremona/20 text-redcremona hover:bg-redcremona/30"
+              >
+                Limpiar
+              </Button>
+            </div>
+
+            <div className="overflow-hidden rounded border border-background6">
+              <Table>
+                <TableHeader className="bg-background2">
+                  <TableRow>
+                    <TableHead className="w-10" />
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Apellido</TableHead>
+                    <TableHead>Legajo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loadingEmpleados ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="h-24 bg-background3 text-center"
+                      >
+                        Cargando...
+                      </TableCell>
+                    </TableRow>
+                  ) : filasPagina.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="h-24 bg-background3 text-center"
+                      >
+                        No se encontraron empleados.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filasPagina.map((empleado) => {
+                      const seleccionado = empleado.id === empleadoSeleccionado
+
+                      return (
+                        <TableRow
+                          key={empleado.id}
+                          className={seleccionado ? "bg-bluecremona/5" : ""}
+                        >
+                          <TableCell className="w-10">
+                            <Checkbox
+                              checked={seleccionado}
+                              onCheckedChange={() => {
+                                setEmpleadoSeleccionado(empleado.id)
+                                setDialogAbierto(false)
+                                setViajes([])
+                                setViajeSeleccionado(undefined)
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>{empleado.nombre}</TableCell>
+                          <TableCell>{empleado.apellido}</TableCell>
+                          <TableCell>{empleado.legajo || "-"}</TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs opacity-70">
+                Página {paginaActual + 1} de {totalPaginas}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPagina((actual) => Math.max(actual - 1, 0))}
+                  disabled={paginaActual === 0}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setPagina((actual) =>
+                      Math.min(actual + 1, totalPaginas - 1)
+                    )
+                  }
+                  disabled={paginaActual >= totalPaginas - 1}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogAbierto(false)}
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
