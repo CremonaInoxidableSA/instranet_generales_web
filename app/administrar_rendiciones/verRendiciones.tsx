@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Boton, TextScrollArea } from "@/components/components"
+import type { Comentario } from "@/types/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -33,8 +34,14 @@ type Empleado = {
 
 type ViajeDelEmpleado = {
   id_viaje: string
+  id_viaje_usuario?: string
   nombre_viaje: string
 }
+
+type ComentarioDelViaje = Pick<
+  Comentario,
+  "nombre_usuario_creador" | "apellido_usuario_creador" | "comentario" | "fecha_creacion"
+>
 
 const mapEmpleado = (item: Record<string, unknown>): Empleado => ({
   id: String(item.id_usuario ?? item.id ?? "").trim(),
@@ -50,13 +57,35 @@ const mapViajeDelEmpleado = (
   item: Record<string, unknown>
 ): ViajeDelEmpleado | null => {
   const idViaje = item.id_viaje ?? item.id_viaje_usuario ?? item.id ?? ""
+  const idViajeUsuario = item.id_viaje_usuario ?? item.id ?? ""
   const nombreViaje = String(item.nombre_viaje ?? item.nombre ?? "").trim()
 
   if (!idViaje && !nombreViaje) return null
 
   return {
     id_viaje: String(idViaje),
+    id_viaje_usuario: String(idViajeUsuario),
     nombre_viaje: nombreViaje || `Viaje ${String(idViaje)}`,
+  }
+}
+
+const mapComentarioDelViaje = (
+  item: Record<string, unknown>
+): ComentarioDelViaje | null => {
+  const comentario = String(item.comentario ?? "").trim()
+  const nombre = String(item.nombre_usuario_creador ?? "").trim()
+  const apellido = String(item.apellido_usuario_creador ?? "").trim()
+  const fechaCreacion = String(item.fecha_creacion ?? "").trim()
+
+  if (!comentario && !nombre && !apellido && !fechaCreacion) {
+    return null
+  }
+
+  return {
+    nombre_usuario_creador: nombre,
+    apellido_usuario_creador: apellido,
+    comentario: comentario || "Sin comentario",
+    fecha_creacion: fechaCreacion,
   }
 }
 
@@ -79,6 +108,8 @@ export default function VerRendiciones() {
     useState<number>()
   const [loadingEmpleados, setLoadingEmpleados] = useState(false)
   const [loadingViajes, setLoadingViajes] = useState(false)
+  const [loadingComentarios, setLoadingComentarios] = useState(false)
+  const [comentarios, setComentarios] = useState<ComentarioDelViaje[]>([])
   const [dialogAbierto, setDialogAbierto] = useState(false)
   const [filtroInput, setFiltroInput] = useState("")
   const [filtro, setFiltro] = useState("")
@@ -205,11 +236,13 @@ export default function VerRendiciones() {
         if (!cancelled) {
           setViajes(viajesCargados)
           setViajeSeleccionado(undefined)
+          setComentarios([])
         }
       } catch {
         if (!cancelled) {
           setViajes([])
           setViajeSeleccionado(undefined)
+          setComentarios([])
           toast.add({
             type: "error",
             description: "No se pudieron cargar los viajes del empleado",
@@ -228,6 +261,63 @@ export default function VerRendiciones() {
       cancelled = true
     }
   }, [empleadoSeleccionado])
+
+  useEffect(() => {
+    const viajeSeleccionadoInfo = viajes[viajeSeleccionado ?? -1]
+    const idViajeUsuario = viajeSeleccionadoInfo?.id_viaje_usuario
+
+    if (!idViajeUsuario) {
+      return
+    }
+
+    let cancelled = false
+
+    const cargarComentarios = async () => {
+      try {
+        setLoadingComentarios(true)
+        const response = await fetchWithConnectionCheck(
+          `/api/generales/comentarios/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
+        )
+
+        if (!response.ok) {
+          throw new Error("Error al obtener comentarios")
+        }
+
+        const body = await response.json()
+        const list: Record<string, unknown>[] = Array.isArray(body?.data)
+          ? body.data
+          : Array.isArray(body)
+            ? body
+            : []
+
+        if (!cancelled) {
+          setComentarios(
+            list
+              .map((item) => mapComentarioDelViaje(item))
+              .filter((item): item is ComentarioDelViaje => item !== null)
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setComentarios([])
+          toast.add({
+            type: "error",
+            description: "No se pudieron cargar los comentarios del viaje",
+          })
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingComentarios(false)
+        }
+      }
+    }
+
+    void cargarComentarios()
+
+    return () => {
+      cancelled = true
+    }
+  }, [viajes, viajeSeleccionado])
 
   const empleadoSeleccionadoInfo = useMemo(
     () =>
@@ -285,7 +375,10 @@ export default function VerRendiciones() {
               tags={viajesTags}
               subtitles={viajesSubtitles}
               selectedIndex={viajeSeleccionado}
-              onTagClick={(_tag, index) => setViajeSeleccionado(index)}
+              onTagClick={(_tag, index) => {
+                setComentarios([])
+                setViajeSeleccionado(index)
+              }}
               extraClass="flex-1 min-h-0"
             />
           )}
@@ -360,12 +453,31 @@ export default function VerRendiciones() {
               onClick={undefined}
             />
           </div>
-          <TextScrollArea
-            tags={[]}
-            selectedIndex={comentarioSeleccionado}
-            onTagClick={(_tag, index) => setComentarioSeleccionado(index)}
-            extraClass="flex-1 min-h-0"
-          />
+          {loadingComentarios ? (
+            <div className="flex flex-1 items-center justify-center rounded border border-dashed border-background6 p-3 text-sm opacity-60">
+              Cargando comentarios...
+            </div>
+          ) : (
+            <TextScrollArea
+              tags={comentarios.map(
+                (comentario) => comentario.comentario || "Sin comentario"
+              )}
+              subtitles={comentarios.map((comentario) => {
+                const autor = `${comentario.nombre_usuario_creador} ${comentario.apellido_usuario_creador}`.trim()
+                const fecha = comentario.fecha_creacion
+                  ? new Date(comentario.fecha_creacion).toLocaleString("es-AR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })
+                  : "Sin fecha"
+
+                return `${autor || "Usuario"} · ${fecha}`
+              })}
+              selectedIndex={comentarioSeleccionado}
+              onTagClick={(_tag, index) => setComentarioSeleccionado(index)}
+              extraClass="flex-1 min-h-0"
+            />
+          )}
         </div>
       </div>
 
