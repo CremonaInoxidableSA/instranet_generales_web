@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Boton, TextScrollArea } from "@/components/components"
-import type { Comentario } from "@/types/types"
+import type { Comentario, Viatico } from "@/types/types"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -40,8 +40,18 @@ type ViajeDelEmpleado = {
 
 type ComentarioDelViaje = Pick<
   Comentario,
-  "nombre_usuario_creador" | "apellido_usuario_creador" | "comentario" | "fecha_creacion"
+  | "nombre_usuario_creador"
+  | "apellido_usuario_creador"
+  | "comentario"
+  | "fecha_creacion"
 >
+
+type ViaticoDelViaje = Pick<
+  Viatico,
+  "id_viatico" | "monto_entregado" | "monto_devuelto" | "estado"
+> & {
+  moneda: string
+}
 
 const mapEmpleado = (item: Record<string, unknown>): Empleado => ({
   id: String(item.id_usuario ?? item.id ?? "").trim(),
@@ -89,6 +99,34 @@ const mapComentarioDelViaje = (
   }
 }
 
+const mapViaticoDelViaje = (
+  item: Record<string, unknown>
+): ViaticoDelViaje | null => {
+  const idViatico = item.id_viatico ?? item.id ?? ""
+  const moneda = String(item.moneda ?? "").trim() || "Sin moneda"
+  const montoEntregado =
+    item.monto_entregado === null || item.monto_entregado === undefined
+      ? 0
+      : Number(item.monto_entregado)
+  const montoDevuelto =
+    item.monto_devuelto === null || item.monto_devuelto === undefined
+      ? 0
+      : Number(item.monto_devuelto)
+  const estado = Boolean(item.estado)
+
+  if (!idViatico && !moneda && !montoEntregado && !montoDevuelto) {
+    return null
+  }
+
+  return {
+    id_viatico: Number(idViatico) || 0,
+    moneda,
+    monto_entregado: montoEntregado,
+    monto_devuelto: montoDevuelto,
+    estado,
+  }
+}
+
 const FILAS_POR_PAGINA = 6
 
 const normalizar = (texto: string) =>
@@ -102,14 +140,13 @@ export default function VerRendiciones() {
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("")
   const [viajes, setViajes] = useState<ViajeDelEmpleado[]>([])
   const [viajeSeleccionado, setViajeSeleccionado] = useState<number>()
-  const [comentarioSeleccionado, setComentarioSeleccionado] = useState<number>()
   const [reciboSeleccionado, setReciboSeleccionado] = useState<number>()
-  const [efectivoEntregadoSeleccionado, setEfectivoEntregadoSeleccionado] =
-    useState<number>()
   const [loadingEmpleados, setLoadingEmpleados] = useState(false)
   const [loadingViajes, setLoadingViajes] = useState(false)
   const [loadingComentarios, setLoadingComentarios] = useState(false)
+  const [loadingViaticos, setLoadingViaticos] = useState(false)
   const [comentarios, setComentarios] = useState<ComentarioDelViaje[]>([])
+  const [viaticos, setViaticos] = useState<ViaticoDelViaje[]>([])
   const [dialogAbierto, setDialogAbierto] = useState(false)
   const [filtroInput, setFiltroInput] = useState("")
   const [filtro, setFiltro] = useState("")
@@ -312,7 +349,48 @@ export default function VerRendiciones() {
       }
     }
 
+    const cargarViaticos = async () => {
+      try {
+        setLoadingViaticos(true)
+        const response = await fetchWithConnectionCheck(
+          `/api/generales/viaticos/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
+        )
+
+        if (!response.ok) {
+          throw new Error("Error al obtener viaticos")
+        }
+
+        const body = await response.json()
+        const list: Record<string, unknown>[] = Array.isArray(body?.data)
+          ? body.data
+          : Array.isArray(body)
+            ? body
+            : []
+
+        if (!cancelled) {
+          setViaticos(
+            list
+              .map((item) => mapViaticoDelViaje(item))
+              .filter((item): item is ViaticoDelViaje => item !== null)
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setViaticos([])
+          toast.add({
+            type: "error",
+            description: "No se pudieron cargar los viáticos del viaje",
+          })
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingViaticos(false)
+        }
+      }
+    }
+
     void cargarComentarios()
+    void cargarViaticos()
 
     return () => {
       cancelled = true
@@ -377,6 +455,7 @@ export default function VerRendiciones() {
               selectedIndex={viajeSeleccionado}
               onTagClick={(_tag, index) => {
                 setComentarios([])
+                setViaticos([])
                 setViajeSeleccionado(index)
               }}
               extraClass="flex-1 min-h-0"
@@ -393,14 +472,20 @@ export default function VerRendiciones() {
               onClick={undefined}
             />
           </div>
-          <TextScrollArea
-            tags={[]}
-            selectedIndex={efectivoEntregadoSeleccionado}
-            onTagClick={(_tag, index) =>
-              setEfectivoEntregadoSeleccionado(index)
-            }
-            extraClass="flex-1 min-h-0"
-          />
+          {loadingViaticos ? (
+            <div className="flex flex-1 items-center justify-center rounded border border-dashed border-background6 p-3 text-sm opacity-60">
+              Cargando efectivo...
+            </div>
+          ) : (
+            <TextScrollArea
+              tags={viaticos.map((viatico) => {
+                const montoEntregado = Number(viatico.monto_entregado ?? 0)
+                const montoDevuelto = Number(viatico.monto_devuelto ?? 0)
+                return `${viatico.moneda}: $${montoEntregado.toLocaleString("es-AR")} / Devuelto: $${montoDevuelto.toLocaleString("es-AR")}`
+              })}
+              extraClass="flex-1 min-h-0"
+            />
+          )}
         </div>
       </div>
 
@@ -463,18 +548,20 @@ export default function VerRendiciones() {
                 (comentario) => comentario.comentario || "Sin comentario"
               )}
               subtitles={comentarios.map((comentario) => {
-                const autor = `${comentario.nombre_usuario_creador} ${comentario.apellido_usuario_creador}`.trim()
+                const autor =
+                  `${comentario.nombre_usuario_creador} ${comentario.apellido_usuario_creador}`.trim()
                 const fecha = comentario.fecha_creacion
-                  ? new Date(comentario.fecha_creacion).toLocaleString("es-AR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })
+                  ? new Date(comentario.fecha_creacion).toLocaleString(
+                      "es-AR",
+                      {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      }
+                    )
                   : "Sin fecha"
 
                 return `${autor || "Usuario"} · ${fecha}`
               })}
-              selectedIndex={comentarioSeleccionado}
-              onTagClick={(_tag, index) => setComentarioSeleccionado(index)}
               extraClass="flex-1 min-h-0"
             />
           )}

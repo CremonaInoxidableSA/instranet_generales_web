@@ -5,6 +5,8 @@ const API_BASE_URL =
 
 export async function GET(request: Request) {
   const token = getBearerTokenFromRequest(request)
+  const { searchParams } = new URL(request.url)
+  const idViajeUsuario = searchParams.get("id_viaje_usuario")?.trim()
 
   if (!token) {
     return NextResponse.json(
@@ -14,7 +16,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/viaticos/lista`, {
+    const url = new URL(`${API_BASE_URL}/viaticos/lista`)
+    if (idViajeUsuario) {
+      url.searchParams.set("id_viaje_usuario", idViajeUsuario)
+    }
+
+    const response = await fetch(url, {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
