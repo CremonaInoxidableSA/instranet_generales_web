@@ -1,7 +1,12 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Boton, TextScrollArea } from "@/components/components"
+import { Pencil } from "lucide-react"
+import {
+  Boton,
+  SelectorConBusqueda,
+  TextScrollArea,
+} from "@/components/components"
 import type { Comentario, Viatico } from "@/types/types"
 import { Button } from "@/components/ui/button"
 import {
@@ -48,7 +53,7 @@ type ComentarioDelViaje = Pick<
 
 type ViaticoDelViaje = Pick<
   Viatico,
-  "id_viatico" | "monto_entregado" | "monto_devuelto"
+  "id_viatico" | "id_moneda" | "monto_entregado" | "monto_devuelto"
 > & {
   moneda: string
   estado: boolean
@@ -104,7 +109,9 @@ const mapViaticoDelViaje = (
   item: Record<string, unknown>
 ): ViaticoDelViaje | null => {
   const idViatico = item.id_viatico ?? item.id ?? ""
-  const moneda = String(item.moneda ?? "").trim() || "Sin moneda"
+  const idMoneda = item.id_moneda ?? item.id_moneda_viatico ?? item.id ?? ""
+  const moneda =
+    String(item.nombre_moneda ?? item.moneda ?? "").trim() || "Sin moneda"
   const montoEntregado =
     item.monto_entregado === null || item.monto_entregado === undefined
       ? 0
@@ -121,6 +128,7 @@ const mapViaticoDelViaje = (
 
   return {
     id_viatico: Number(idViatico) || 0,
+    id_moneda: Number(idMoneda) || undefined,
     moneda,
     monto_entregado: montoEntregado,
     monto_devuelto: montoDevuelto,
@@ -157,6 +165,18 @@ export default function VerRendiciones() {
     monto_entregado: "",
     monto_devuelto: "",
   })
+  const [monedas, setMonedas] = useState<Array<{ id: string; nombre: string }>>(
+    []
+  )
+  const [loadingMonedas, setLoadingMonedas] = useState(false)
+  const [viaticoEditando, setViaticoEditando] = useState<{
+    id_viatico: number
+    id_moneda: string
+    monto_entregado: string
+    monto_devuelto: string
+  } | null>(null)
+  const [dialogViaticoEdicionAbierto, setDialogViaticoEdicionAbierto] =
+    useState(false)
   const [filtroInput, setFiltroInput] = useState("")
   const [filtro, setFiltro] = useState("")
   const [pagina, setPagina] = useState(0)
@@ -198,6 +218,269 @@ export default function VerRendiciones() {
 
   const viajeActual = viajes[viajeSeleccionado ?? -1] ?? null
   const idViajeUsuarioActual = viajeActual?.id_viaje_usuario
+
+  const abrirEdicionViatico = (viatico: ViaticoDelViaje) => {
+    setViaticoEditando({
+      id_viatico: viatico.id_viatico,
+      id_moneda: String(viatico.id_moneda ?? ""),
+      monto_entregado: String(viatico.monto_entregado ?? ""),
+      monto_devuelto: String(viatico.monto_devuelto ?? ""),
+    })
+    setDialogViaticoEdicionAbierto(true)
+  }
+
+  const guardarViaticoEditado = async () => {
+    if (!viaticoEditando || !idViajeUsuarioActual) {
+      toast.add({
+        type: "error",
+        description: "No hay un viático válido para editar.",
+      })
+      return
+    }
+
+    const idMoneda = Number(viaticoEditando.id_moneda)
+    const montoEntregado = Number(viaticoEditando.monto_entregado || 0)
+    const montoDevuelto = Number(viaticoEditando.monto_devuelto || 0)
+
+    if (!Number.isFinite(idMoneda) || !Number.isFinite(montoEntregado)) {
+      toast.add({
+        type: "error",
+        description: "Completá los campos del viático correctamente.",
+      })
+      return
+    }
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        "/api/generales/viaticos/editar",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id_viatico: Number(viaticoEditando.id_viatico),
+            id_moneda: idMoneda,
+            monto_entregado: montoEntregado,
+            monto_devuelto: montoDevuelto,
+          }),
+        }
+      )
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.detail === "string"
+            ? payload.detail
+            : "No se pudo actualizar el viático"
+        )
+      }
+
+      await cargarDetalleViaje(String(idViajeUsuarioActual))
+      setDialogViaticoEdicionAbierto(false)
+      setViaticoEditando(null)
+      toast.add({
+        type: "success",
+        description: "Viático actualizado correctamente.",
+      })
+    } catch {
+      toast.add({
+        type: "error",
+        description: "No se pudo actualizar el viático.",
+      })
+    }
+  }
+
+  const aprobarViatico = async () => {
+    if (!viaticoEditando || !idViajeUsuarioActual) {
+      toast.add({
+        type: "error",
+        description: "No hay un viático válido para aprobar.",
+      })
+      return
+    }
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        "/api/generales/viaticos/aprobar",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id_viatico: Number(viaticoEditando.id_viatico),
+          }),
+        }
+      )
+
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.detail === "string"
+            ? payload.detail
+            : "No se pudo aprobar el viático"
+        )
+      }
+
+      await cargarDetalleViaje(String(idViajeUsuarioActual))
+      setDialogViaticoEdicionAbierto(false)
+      setViaticoEditando(null)
+      toast.add({
+        type: "success",
+        description: "Viático aprobado correctamente.",
+      })
+    } catch {
+      toast.add({
+        type: "error",
+        description: "No se pudo aprobar el viático.",
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (!dialogViaticoEdicionAbierto) {
+      return
+    }
+
+    let cancelled = false
+
+    const cargarMonedas = async () => {
+      try {
+        setLoadingMonedas(true)
+        const response = await fetchWithConnectionCheck(
+          "/api/generales/monedas/lista"
+        )
+
+        if (!response.ok) {
+          throw new Error("Error al obtener monedas")
+        }
+
+        const body = await response.json()
+        const list: Record<string, unknown>[] = Array.isArray(body?.data)
+          ? body.data
+          : Array.isArray(body)
+            ? body
+            : []
+
+        if (!cancelled) {
+          setMonedas(
+            list
+              .map((item) => {
+                const id = String(item.id_moneda ?? item.id ?? "").trim()
+                const nombre = String(
+                  item.nombre ?? item.moneda ?? item.descripcion ?? ""
+                ).trim()
+
+                if (!id && !nombre) {
+                  return null
+                }
+
+                return {
+                  id: id || "0",
+                  nombre: nombre || `Moneda ${id || ""}`,
+                }
+              })
+              .filter(
+                (item): item is { id: string; nombre: string } => item !== null
+              )
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setMonedas([])
+          toast.add({
+            type: "error",
+            description: "No se pudieron cargar las monedas",
+          })
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingMonedas(false)
+        }
+      }
+    }
+
+    void cargarMonedas()
+
+    return () => {
+      cancelled = true
+    }
+  }, [dialogViaticoEdicionAbierto])
+
+  const cargarDetalleViaje = async (idViajeUsuario: string) => {
+    let comentariosNuevos: ComentarioDelViaje[] = []
+    let viaticosNuevos: ViaticoDelViaje[] = []
+
+    try {
+      setLoadingComentarios(true)
+      const responseComentarios = await fetchWithConnectionCheck(
+        `/api/generales/comentarios/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
+      )
+
+      if (!responseComentarios.ok) {
+        throw new Error("Error al obtener comentarios")
+      }
+
+      const bodyComentarios = await responseComentarios.json()
+      const listComentarios: Record<string, unknown>[] = Array.isArray(
+        bodyComentarios?.data
+      )
+        ? bodyComentarios.data
+        : Array.isArray(bodyComentarios)
+          ? bodyComentarios
+          : []
+
+      comentariosNuevos = listComentarios
+        .map((item) => mapComentarioDelViaje(item))
+        .filter((item): item is ComentarioDelViaje => item !== null)
+    } catch {
+      comentariosNuevos = []
+      toast.add({
+        type: "error",
+        description: "No se pudieron cargar los comentarios del viaje",
+      })
+    } finally {
+      setLoadingComentarios(false)
+    }
+
+    try {
+      setLoadingViaticos(true)
+      const responseViaticos = await fetchWithConnectionCheck(
+        `/api/generales/viaticos/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
+      )
+
+      if (!responseViaticos.ok) {
+        throw new Error("Error al obtener viaticos")
+      }
+
+      const bodyViaticos = await responseViaticos.json()
+      const listViaticos: Record<string, unknown>[] = Array.isArray(
+        bodyViaticos?.data
+      )
+        ? bodyViaticos.data
+        : Array.isArray(bodyViaticos)
+          ? bodyViaticos
+          : []
+
+      viaticosNuevos = listViaticos
+        .map((item) => mapViaticoDelViaje(item))
+        .filter((item): item is ViaticoDelViaje => item !== null)
+    } catch {
+      viaticosNuevos = []
+      toast.add({
+        type: "error",
+        description: "No se pudieron cargar los viáticos del viaje",
+      })
+    } finally {
+      setLoadingViaticos(false)
+    }
+
+    setComentarios(comentariosNuevos)
+    setViaticos(viaticosNuevos)
+  }
 
   const guardarComentario = async () => {
     if (!idViajeUsuarioActual) {
@@ -242,15 +525,7 @@ export default function VerRendiciones() {
         )
       }
 
-      setComentarios((actual) => [
-        {
-          nombre_usuario_creador: "",
-          apellido_usuario_creador: "",
-          comentario,
-          fecha_creacion: new Date().toISOString(),
-        },
-        ...actual,
-      ])
+      await cargarDetalleViaje(String(idViajeUsuarioActual))
       setTextoComentario("")
       setDialogComentarioAbierto(false)
       toast.add({
@@ -313,17 +588,7 @@ export default function VerRendiciones() {
         )
       }
 
-      const monedaLabel = nuevoViatico.id_moneda
-      setViaticos((actual) => [
-        {
-          id_viatico: Date.now(),
-          moneda: monedaLabel,
-          monto_entregado: montoEntregado,
-          monto_devuelto: montoDevuelto,
-          estado: false,
-        },
-        ...actual,
-      ])
+      await cargarDetalleViaje(String(idViajeUsuarioActual))
       setNuevoViatico({
         id_moneda: "",
         monto_entregado: "",
@@ -464,88 +729,12 @@ export default function VerRendiciones() {
 
     let cancelled = false
 
-    const cargarComentarios = async () => {
-      try {
-        setLoadingComentarios(true)
-        const response = await fetchWithConnectionCheck(
-          `/api/generales/comentarios/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
-        )
-
-        if (!response.ok) {
-          throw new Error("Error al obtener comentarios")
-        }
-
-        const body = await response.json()
-        const list: Record<string, unknown>[] = Array.isArray(body?.data)
-          ? body.data
-          : Array.isArray(body)
-            ? body
-            : []
-
-        if (!cancelled) {
-          setComentarios(
-            list
-              .map((item) => mapComentarioDelViaje(item))
-              .filter((item): item is ComentarioDelViaje => item !== null)
-          )
-        }
-      } catch {
-        if (!cancelled) {
-          setComentarios([])
-          toast.add({
-            type: "error",
-            description: "No se pudieron cargar los comentarios del viaje",
-          })
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingComentarios(false)
-        }
-      }
+    const cargarDetalle = async () => {
+      if (cancelled) return
+      await cargarDetalleViaje(idViajeUsuario)
     }
 
-    const cargarViaticos = async () => {
-      try {
-        setLoadingViaticos(true)
-        const response = await fetchWithConnectionCheck(
-          `/api/generales/viaticos/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
-        )
-
-        if (!response.ok) {
-          throw new Error("Error al obtener viaticos")
-        }
-
-        const body = await response.json()
-        const list: Record<string, unknown>[] = Array.isArray(body?.data)
-          ? body.data
-          : Array.isArray(body)
-            ? body
-            : []
-
-        if (!cancelled) {
-          setViaticos(
-            list
-              .map((item) => mapViaticoDelViaje(item))
-              .filter((item): item is ViaticoDelViaje => item !== null)
-          )
-        }
-      } catch {
-        if (!cancelled) {
-          setViaticos([])
-          toast.add({
-            type: "error",
-            description: "No se pudieron cargar los viáticos del viaje",
-          })
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingViaticos(false)
-        }
-      }
-    }
-
-    void cargarComentarios()
-    void cargarViaticos()
+    void cargarDetalle()
 
     return () => {
       cancelled = true
@@ -643,6 +832,35 @@ export default function VerRendiciones() {
                 return `${viatico.moneda}: $${montoEntregado.toLocaleString("es-AR")} / Devuelto: $${montoDevuelto.toLocaleString("es-AR")}`
               })}
               extraClass="flex-1 min-h-0"
+              renderItem={({ tag, index }) => {
+                const viaticoActual = viaticos[index]
+                const estaAprobado = Boolean(viaticoActual?.estado)
+
+                return (
+                  <div
+                    className={`flex w-full flex-1 items-center justify-between gap-2 rounded ${estaAprobado ? "bg-greencremona/10" : ""}`}
+                  >
+                    <div className="flex flex-1 py-2">
+                      <span>{tag}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={estaAprobado}
+                      className="h-8 w-8 rounded-full text-bluecremona hover:bg-bluecremona/10 disabled:cursor-not-allowed disabled:opacity-0"
+                      aria-label={`Editar viático ${index + 1}`}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        if (estaAprobado) return
+                        abrirEdicionViatico(viaticoActual)
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )
+              }}
             />
           )}
         </div>
@@ -810,6 +1028,107 @@ export default function VerRendiciones() {
               Cancelar
             </Button>
             <Button type="button" onClick={guardarViatico}>
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={dialogViaticoEdicionAbierto}
+        onOpenChange={(nextOpen) => {
+          setDialogViaticoEdicionAbierto(nextOpen)
+          if (!nextOpen) {
+            setViaticoEditando(null)
+          }
+        }}
+      >
+        <DialogContent className="z-100 bg-background2 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar viático</DialogTitle>
+            <DialogDescription>
+              Actualizá la moneda y los montos del viático seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+
+          {viaticoEditando && (
+            <div className="flex flex-col gap-4 py-2">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Moneda</label>
+                {loadingMonedas ? (
+                  <div className="rounded border border-dashed border-background6 bg-background3 px-3 py-2 text-sm opacity-60">
+                    Cargando monedas...
+                  </div>
+                ) : (
+                  <SelectorConBusqueda
+                    placeholder="Seleccionar moneda"
+                    searchPlaceholder="Buscar moneda..."
+                    data={monedas}
+                    value={viaticoEditando.id_moneda}
+                    onValueChange={(value) =>
+                      setViaticoEditando((actual) =>
+                        actual ? { ...actual, id_moneda: value } : actual
+                      )
+                    }
+                    extraClass="w-full"
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Monto entregado</label>
+                  <Input
+                    type="number"
+                    value={viaticoEditando.monto_entregado}
+                    onChange={(event) =>
+                      setViaticoEditando((actual) =>
+                        actual
+                          ? {
+                              ...actual,
+                              monto_entregado: event.target.value,
+                            }
+                          : actual
+                      )
+                    }
+                    className="border border-background6 bg-background3"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium">Monto devuelto</label>
+                  <Input
+                    type="number"
+                    value={viaticoEditando.monto_devuelto}
+                    onChange={(event) =>
+                      setViaticoEditando((actual) =>
+                        actual
+                          ? {
+                              ...actual,
+                              monto_devuelto: event.target.value,
+                            }
+                          : actual
+                      )
+                    }
+                    className="border border-background6 bg-background3"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogViaticoEdicionAbierto(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" variant="secondary" onClick={aprobarViatico}>
+              Aprobar
+            </Button>
+            <Button type="button" onClick={guardarViaticoEditado}>
               Guardar
             </Button>
           </DialogFooter>
