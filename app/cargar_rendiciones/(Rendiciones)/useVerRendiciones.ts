@@ -59,6 +59,8 @@ export function useVerRendiciones() {
   const [dialogComentarioAbierto, setDialogComentarioAbierto] = useState(false)
   const [dialogViaticoEdicionAbierto, setDialogViaticoEdicionAbierto] =
     useState(false)
+  const [dialogTicketUploadAbierto, setDialogTicketUploadAbierto] =
+    useState(false)
   const [dialogTicketDetalleAbierto, setDialogTicketDetalleAbierto] =
     useState(false)
 
@@ -301,9 +303,13 @@ export function useVerRendiciones() {
         ? body.tickets
         : Array.isArray(body?.data)
           ? body.data
-          : Array.isArray(body)
-            ? body
-            : []
+          : Array.isArray(body?.items)
+            ? body.items
+            : Array.isArray(body?.result)
+              ? body.result
+              : Array.isArray(body)
+                ? body
+                : []
       ticketsNuevos = list
         .map(mapTicketDelViaje)
         .filter((x): x is TicketDelViaje => x !== null)
@@ -326,6 +332,58 @@ export function useVerRendiciones() {
       void cargarImagenTicket(ticket.id_ticket)
     }
   }, [])
+
+  const eliminarTicket = useCallback(
+    async (idTicket: number) => {
+      if (!idTicket) return
+
+      try {
+        const response = await fetchWithConnectionCheck(
+          "/api/generales/tickets/eliminar",
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ id_ticket: Number(idTicket) }),
+          }
+        )
+
+        const payload = await response.json().catch(() => ({}))
+        if (!response.ok) {
+          throw new Error(
+            typeof payload?.detail === "string"
+              ? payload.detail
+              : "No se pudo eliminar el recibo"
+          )
+        }
+
+        if (idViajeUsuarioActual) {
+          await cargarDetalleViaje(String(idViajeUsuarioActual))
+        }
+        setReciboSeleccionado(undefined)
+        setDialogTicketDetalleAbierto(false)
+        setTicketDetalle(null)
+        toast.add({
+          type: "success",
+          description:
+            typeof payload?.detail === "string"
+              ? payload.detail
+              : "Recibo eliminado correctamente.",
+        })
+      } catch (error) {
+        toast.add({
+          type: "error",
+          description:
+            error instanceof Error
+              ? error.message
+              : "No se pudo eliminar el recibo.",
+        })
+      }
+    },
+    [cargarDetalleViaje, idViajeUsuarioActual]
+  )
 
   // ------------------- HANDLERS: GUARDAR / APROBAR -------------------
   const guardarComentario = async () => {
@@ -524,9 +582,24 @@ export function useVerRendiciones() {
     setDialogComentarioAbierto(true)
   }
 
+  const abrirDialogCargaTickets = () => {
+    if (!idViajeUsuarioActual) {
+      toast.add({
+        type: "error",
+        description: "Seleccioná un viaje antes de subir recibos.",
+      })
+      return
+    }
+    setDialogTicketUploadAbierto(true)
+  }
+
   const cerrarDialogComentario = (open: boolean) => {
     setDialogComentarioAbierto(open)
     if (!open) setTextoComentario("")
+  }
+
+  const cerrarDialogCargaTickets = (open: boolean) => {
+    setDialogTicketUploadAbierto(open)
   }
 
   const cerrarDialogEdicion = (open: boolean) => {
@@ -561,6 +634,72 @@ export function useVerRendiciones() {
     })
     setDialogViaticoEdicionAbierto(true)
   }
+
+  const subirTickets = useCallback(
+    async (archivos: File[]) => {
+      if (!idViajeUsuarioActual) {
+        toast.add({
+          type: "error",
+          description: "Seleccioná un viaje antes de subir recibos.",
+        })
+        return
+      }
+
+      if (!archivos.length) {
+        toast.add({
+          type: "error",
+          description: "Seleccioná al menos una imagen para subir.",
+        })
+        return
+      }
+
+      try {
+        const formData = new FormData()
+        archivos.forEach((archivo) => {
+          formData.append("archivos", archivo, archivo.name)
+        })
+
+        const response = await fetchWithConnectionCheck(
+          `/api/generales/tickets/cargar?id_viaje_usuario=${encodeURIComponent(String(idViajeUsuarioActual))}`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        )
+
+        const payload = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+          throw new Error(
+            typeof payload?.detail === "string"
+              ? payload.detail
+              : typeof payload?.error === "string"
+                ? payload.error
+                : "No se pudieron cargar los recibos"
+          )
+        }
+
+        await cargarDetalleViaje(String(idViajeUsuarioActual))
+        setDialogTicketUploadAbierto(false)
+        toast.add({
+          type: "success",
+          description:
+            typeof payload?.detail === "string"
+              ? payload.detail
+              : "Recibos cargados correctamente.",
+        })
+      } catch (error) {
+        toast.add({
+          type: "error",
+          description:
+            error instanceof Error
+              ? error.message
+              : "No se pudieron cargar los recibos.",
+        })
+      }
+    },
+    [cargarDetalleViaje, idViajeUsuarioActual]
+  )
 
   const seleccionarEmpleado = (id: string) => {
     setEmpleadoSeleccionado(id)
@@ -811,6 +950,7 @@ export function useVerRendiciones() {
     dialogAbierto,
     dialogComentarioAbierto,
     dialogViaticoEdicionAbierto,
+    dialogTicketUploadAbierto,
     dialogTicketDetalleAbierto,
 
     // actions
@@ -819,16 +959,20 @@ export function useVerRendiciones() {
     abrirDialogViajante,
     cerrarDialogViajante,
     abrirDialogComentario,
+    abrirDialogCargaTickets,
     cerrarDialogComentario,
+    cerrarDialogCargaTickets,
     cerrarDialogEdicion,
     abrirEdicionViatico,
     abrirCreacionViatico,
+    subirTickets,
     seleccionarEmpleado,
     seleccionarViaje,
     abrirDetalleTicket,
     cerrarDetalleTicket,
     cargarDetalleTicket,
     aprobarTicket,
+    eliminarTicket,
     guardarComentario,
     guardarViaticoEditado,
     aprobarViatico,

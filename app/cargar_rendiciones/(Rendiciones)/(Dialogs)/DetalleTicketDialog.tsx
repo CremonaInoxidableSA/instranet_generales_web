@@ -20,6 +20,7 @@ type Props = {
   loading: boolean
   imageUrl?: string
   onAprobar?: () => void
+  onEliminar?: () => void
 }
 
 const getEstadoTicket = (estado?: string | null) => {
@@ -58,6 +59,7 @@ export function DetalleTicketDialog({
   loading,
   imageUrl,
   onAprobar,
+  onEliminar,
 }: Props) {
   const estado = getEstadoTicket(ticket?.estado)
 
@@ -162,6 +164,16 @@ export function DetalleTicketDialog({
 
         <DialogFooter className="gap-2">
           <Boton onClick={() => onOpenChange(false)}>Cerrar</Boton>
+          {onEliminar && (
+            <Boton
+              onClick={() => {
+                onEliminar()
+              }}
+              extraClass="border-redcremona bg-redcremona/20 text-redcremona hover:bg-redcremona/30"
+            >
+              Eliminar
+            </Boton>
+          )}
           {onAprobar && ticket?.estado === "POR APROBAR" && (
             <Boton
               onClick={onAprobar}
