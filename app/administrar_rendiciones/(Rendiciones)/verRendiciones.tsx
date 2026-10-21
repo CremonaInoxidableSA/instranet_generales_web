@@ -1,11 +1,18 @@
 "use client"
 
+import Image from "next/image"
 import { Check, Pencil } from "lucide-react"
 import { Boton, BotonIcono, TextScrollArea } from "@/components/components"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useVerRendiciones } from "./useVerRendiciones"
 import { SeleccionarViajanteDialog } from "./(Dialogs)/SeleccionarViajanteDialog"
 import { EditarViaticoDialog } from "./(Dialogs)/EditarViaticoDialog"
 import { AgregarComentarioDialog } from "./(Dialogs)/AgregarComentarioDialog"
+
+const truncarTexto = (texto: string, maxLength = 30) => {
+  if (texto.length <= maxLength) return texto
+  return `${texto.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`
+}
 
 export default function VerRendiciones() {
   const r = useVerRendiciones()
@@ -136,13 +143,100 @@ export default function VerRendiciones() {
             </div>
           </div>
 
-          <TextScrollArea
-            placeholder="RECIBOS"
-            tags={[]}
-            selectedIndex={r.reciboSeleccionado}
-            onTagClick={(_tag, index) => r.setReciboSeleccionado(index)}
-            extraClass="flex-1 min-h-0"
-          />
+          {r.loadingTickets ? (
+            <div className="flex flex-1 flex-col gap-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`ticket-skeleton-${index}`}
+                  className="flex items-center gap-3 rounded bg-background3 p-2"
+                >
+                  <Skeleton className="h-14 w-14 rounded-md" />
+                  <div className="flex flex-1 flex-col gap-2">
+                    <Skeleton className="h-4 w-2/3 rounded" />
+                    <Skeleton className="h-3 w-1/2 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <TextScrollArea
+              placeholder="RECIBOS"
+              tags={r.tickets.map((ticket) => ticket.nombre_imagen)}
+              selectedIndex={r.reciboSeleccionado}
+              onTagClick={(_tag, index) => r.setReciboSeleccionado(index)}
+              extraClass="flex-1 min-h-0"
+              rowClassName={(_tag, index) => {
+                const estado = (r.tickets[index]?.estado ?? "").toUpperCase()
+                if (estado === "PENDIENTE") return "bg-orangecremona/10"
+                if (estado === "APROBADO" || estado === "APROBADA")
+                  return "bg-greencremona/10"
+                return ""
+              }}
+              renderItem={({ tag, index, isSelected }) => {
+                const ticket = r.tickets[index]
+                const estado = (ticket?.estado ?? "").toUpperCase()
+                const montoTexto =
+                  ticket?.monto !== null && ticket?.monto !== undefined
+                    ? Number(ticket.monto).toLocaleString("es-AR", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })
+                    : "Sin monto"
+                const imageUrl = ticket
+                  ? r.ticketImagenes[ticket.id_ticket]
+                  : undefined
+                const estaCargandoImagen = ticket
+                  ? Boolean(r.loadingTicketImagenes[ticket.id_ticket])
+                  : false
+
+                return (
+                  <div
+                    onClick={() => r.setReciboSeleccionado(index)}
+                    className={`flex w-full flex-1 cursor-pointer items-center gap-3 py-2 ${isSelected ? "opacity-100" : ""}`}
+                  >
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-background6 bg-background3">
+                      {estaCargandoImagen ? (
+                        <Skeleton className="h-full w-full rounded-md" />
+                      ) : imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt={tag}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Skeleton className="h-full w-full rounded-md" />
+                      )}
+                    </div>
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium">
+                          {truncarTexto(tag || "Recibo sin nombre")}
+                        </span>
+                        <span
+                          className={[
+                            "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase",
+                            estado === "PENDIENTE"
+                              ? "bg-orangecremona/20 text-orangecremona"
+                              : estado === "APROBADO" || estado === "APROBADA"
+                                ? "bg-greencremona/20 text-greencremona"
+                                : "bg-background4 text-foreground/70",
+                          ].join(" ")}
+                        >
+                          {estado || "PENDIENTE"}
+                        </span>
+                      </div>
+                      <span className="text-xs opacity-70">
+                        Monto: ${montoTexto}
+                      </span>
+                    </div>
+                  </div>
+                )
+              }}
+            />
+          )}
         </div>
 
         {/* Comentarios */}

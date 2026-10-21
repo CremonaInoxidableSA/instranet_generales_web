@@ -1,6 +1,7 @@
 import type {
   ComentarioDelViaje,
   Empleado,
+  TicketDelViaje,
   ViaticoDelViaje,
   ViajeDelEmpleado,
 } from "./types"
@@ -81,5 +82,33 @@ export const mapViaticoDelViaje = (
     monto_entregado: montoEntregado,
     monto_devuelto: montoDevuelto,
     estado,
+  }
+}
+
+export const mapTicketDelViaje = (
+  item: Record<string, unknown>
+): TicketDelViaje | null => {
+  const idTicket = Number(item.id_ticket ?? item.id ?? 0)
+  const nombreImagen = String(item.nombre_imagen ?? item.nombre ?? "").trim()
+  const montoValue =
+    item.monto === null || item.monto === undefined ? null : Number(item.monto)
+  const idMonedaValue =
+    item.id_moneda === null || item.id_moneda === undefined
+      ? null
+      : Number(item.id_moneda)
+  const estado = String(
+    item.estado ?? item.estado_ticket_usuario ?? item.estado_ticket_admin ?? ""
+  )
+    .trim()
+    .toUpperCase()
+
+  if (!Number.isFinite(idTicket) && !nombreImagen) return null
+
+  return {
+    id_ticket: Number.isFinite(idTicket) ? idTicket : 0,
+    nombre_imagen: nombreImagen || "Recibo sin nombre",
+    monto: Number.isFinite(montoValue) ? montoValue : null,
+    id_moneda: Number.isFinite(idMonedaValue) ? idMonedaValue : null,
+    estado: estado || "PENDIENTE",
   }
 }

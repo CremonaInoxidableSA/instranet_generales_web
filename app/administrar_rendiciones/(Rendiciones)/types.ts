@@ -29,6 +29,14 @@ export type ViaticoDelViaje = Pick<
   estado: boolean
 }
 
+export type TicketDelViaje = {
+  id_ticket: number
+  nombre_imagen: string
+  monto: number | null
+  id_moneda?: number | null
+  estado: string
+}
+
 export type Moneda = {
   id: string
   nombre: string

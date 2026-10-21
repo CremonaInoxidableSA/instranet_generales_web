@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "@/components/ui/toast"
 import { fetchWithConnectionCheck } from "@/lib/connectionManager"
 import {
   mapComentarioDelViaje,
   mapEmpleado,
+  mapTicketDelViaje,
   mapViaticoDelViaje,
   mapViajeDelEmpleado,
   normalizar,
@@ -14,19 +15,13 @@ import type {
   ComentarioDelViaje,
   Empleado,
   Moneda,
-  NuevoViatico,
+  TicketDelViaje,
   ViaticoDelViaje,
   ViaticoEditando,
   ViajeDelEmpleado,
 } from "./types"
 
 const FILAS_POR_PAGINA = 6
-
-const VIATICO_VACIO: NuevoViatico = {
-  id_moneda: "",
-  monto_entregado: "",
-  monto_devuelto: "",
-}
 
 export function useVerRendiciones() {
   // ------------------- STATE -------------------
@@ -40,14 +35,21 @@ export function useVerRendiciones() {
   const [loadingViajes, setLoadingViajes] = useState(false)
   const [loadingComentarios, setLoadingComentarios] = useState(false)
   const [loadingViaticos, setLoadingViaticos] = useState(false)
+  const [loadingTickets, setLoadingTickets] = useState(false)
   const [loadingMonedas, setLoadingMonedas] = useState(false)
 
   const [comentarios, setComentarios] = useState<ComentarioDelViaje[]>([])
   const [viaticos, setViaticos] = useState<ViaticoDelViaje[]>([])
+  const [tickets, setTickets] = useState<TicketDelViaje[]>([])
+  const [ticketImagenes, setTicketImagenes] = useState<Record<number, string>>(
+    {}
+  )
+  const [loadingTicketImagenes, setLoadingTicketImagenes] = useState<
+    Record<number, boolean>
+  >({})
   const [monedas, setMonedas] = useState<Moneda[]>([])
 
   const [dialogAbierto, setDialogAbierto] = useState(false)
-  const [dialogViaticoAbierto, setDialogViaticoAbierto] = useState(false)
   const [dialogComentarioAbierto, setDialogComentarioAbierto] = useState(false)
   const [dialogViaticoEdicionAbierto, setDialogViaticoEdicionAbierto] =
     useState(false)
@@ -112,9 +114,41 @@ export function useVerRendiciones() {
     setPagina((actual) => Math.min(actual + 1, totalPaginas - 1))
 
   // ------------------- CARGA DE DATOS -------------------
-  const cargarDetalleViaje = async (idViajeUsuario: string) => {
+  const cargarImagenTicket = async (idTicket: number) => {
+    if (!idTicket) return
+
+    setLoadingTicketImagenes((prev) => ({ ...prev, [idTicket]: true }))
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        `/api/generales/tickets/imagen?id_ticket=${encodeURIComponent(String(idTicket))}`
+      )
+      if (!response.ok) throw new Error("Error al obtener la imagen del ticket")
+
+      const blob = await response.blob()
+      if (blob.size === 0) throw new Error("Imagen vacía")
+
+      const objectUrl = URL.createObjectURL(blob)
+      setTicketImagenes((prev) => ({ ...prev, [idTicket]: objectUrl }))
+    } catch {
+      setTicketImagenes((prev) => {
+        const next = { ...prev }
+        delete next[idTicket]
+        return next
+      })
+    } finally {
+      setLoadingTicketImagenes((prev) => {
+        const next = { ...prev }
+        delete next[idTicket]
+        return next
+      })
+    }
+  }
+
+  const cargarDetalleViaje = useCallback(async (idViajeUsuario: string) => {
     let comentariosNuevos: ComentarioDelViaje[] = []
     let viaticosNuevos: ViaticoDelViaje[] = []
+    let ticketsNuevos: TicketDelViaje[] = []
 
     try {
       setLoadingComentarios(true)
@@ -166,9 +200,42 @@ export function useVerRendiciones() {
       setLoadingViaticos(false)
     }
 
+    try {
+      setLoadingTickets(true)
+      const response = await fetchWithConnectionCheck(
+        `/api/generales/tickets/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
+      )
+      if (!response.ok) throw new Error("Error al obtener tickets")
+      const body = await response.json()
+      const list: Record<string, unknown>[] = Array.isArray(body?.tickets)
+        ? body.tickets
+        : Array.isArray(body?.data)
+          ? body.data
+          : Array.isArray(body)
+            ? body
+            : []
+      ticketsNuevos = list
+        .map(mapTicketDelViaje)
+        .filter((x): x is TicketDelViaje => x !== null)
+    } catch {
+      ticketsNuevos = []
+      toast.add({
+        type: "error",
+        description: "No se pudieron cargar los recibos del viaje",
+      })
+    } finally {
+      setLoadingTickets(false)
+    }
+
     setComentarios(comentariosNuevos)
     setViaticos(viaticosNuevos)
-  }
+    setTickets(ticketsNuevos)
+    setTicketImagenes({})
+
+    for (const ticket of ticketsNuevos) {
+      void cargarImagenTicket(ticket.id_ticket)
+    }
+  }, [])
 
   // ------------------- HANDLERS: GUARDAR / APROBAR -------------------
   const guardarComentario = async () => {
@@ -366,11 +433,17 @@ export function useVerRendiciones() {
     setDialogAbierto(false)
     setViajes([])
     setViajeSeleccionado(undefined)
+    setComentarios([])
+    setViaticos([])
+    setTickets([])
+    setTicketImagenes({})
   }
 
   const seleccionarViaje = (index: number) => {
     setComentarios([])
     setViaticos([])
+    setTickets([])
+    setTicketImagenes({})
     setViajeSeleccionado(index)
   }
 
@@ -469,7 +542,7 @@ export function useVerRendiciones() {
     return () => {
       cancelled = true
     }
-  }, [viajes, viajeSeleccionado])
+  }, [cargarDetalleViaje, viajes, viajeSeleccionado])
 
   useEffect(() => {
     if (!dialogViaticoEdicionAbierto) return
@@ -538,6 +611,9 @@ export function useVerRendiciones() {
     setReciboSeleccionado,
     comentarios,
     viaticos,
+    tickets,
+    ticketImagenes,
+    loadingTicketImagenes,
     monedas,
     textoComentario,
     setTextoComentario,
@@ -551,6 +627,7 @@ export function useVerRendiciones() {
     loadingViajes,
     loadingComentarios,
     loadingViaticos,
+    loadingTickets,
     loadingMonedas,
 
     // paginación
@@ -562,7 +639,6 @@ export function useVerRendiciones() {
 
     // dialogs open state
     dialogAbierto,
-    dialogViaticoAbierto,
     dialogComentarioAbierto,
     dialogViaticoEdicionAbierto,
 

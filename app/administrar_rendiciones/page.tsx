@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
 import VerRendiciones from "./(Rendiciones)/verRendiciones"
-import AgregarOpciones from "./agregarOpciones"
+import AgregarOpciones from "./(Opciones)/AgregarOpciones"
 
 const secciones = [
   {
