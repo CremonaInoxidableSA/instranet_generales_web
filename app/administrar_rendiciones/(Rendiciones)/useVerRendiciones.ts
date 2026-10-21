@@ -7,6 +7,7 @@ import {
   mapComentarioDelViaje,
   mapEmpleado,
   mapTicketDelViaje,
+  mapTicketDetalle,
   mapViaticoDelViaje,
   mapViajeDelEmpleado,
   normalizar,
@@ -16,6 +17,7 @@ import type {
   Empleado,
   Moneda,
   TicketDelViaje,
+  TicketDetalle,
   ViaticoDelViaje,
   ViaticoEditando,
   ViajeDelEmpleado,
@@ -53,8 +55,12 @@ export function useVerRendiciones() {
   const [dialogComentarioAbierto, setDialogComentarioAbierto] = useState(false)
   const [dialogViaticoEdicionAbierto, setDialogViaticoEdicionAbierto] =
     useState(false)
+  const [dialogTicketDetalleAbierto, setDialogTicketDetalleAbierto] =
+    useState(false)
 
   const [textoComentario, setTextoComentario] = useState("")
+  const [ticketDetalle, setTicketDetalle] = useState<TicketDetalle | null>(null)
+  const [loadingTicketDetalle, setLoadingTicketDetalle] = useState(false)
   const [viaticoEditando, setViaticoEditando] =
     useState<ViaticoEditando | null>(null)
 
@@ -144,6 +150,86 @@ export function useVerRendiciones() {
       })
     }
   }
+
+  const cargarDetalleTicket = useCallback(async (idTicket: number) => {
+    if (!idTicket) return
+
+    try {
+      setLoadingTicketDetalle(true)
+      const response = await fetchWithConnectionCheck(
+        `/api/generales/tickets/detalles?id_ticket=${encodeURIComponent(String(idTicket))}`
+      )
+      if (!response.ok)
+        throw new Error("Error al obtener el detalle del ticket")
+      const body = await response.json()
+      const ticket =
+        (body?.ticket && typeof body.ticket === "object"
+          ? mapTicketDetalle(body.ticket as Record<string, unknown>)
+          : null) ??
+        (Array.isArray(body)
+          ? mapTicketDetalle(body[0] as Record<string, unknown>)
+          : null)
+
+      if (!ticket) {
+        throw new Error("No se encontró detalle del ticket")
+      }
+
+      setTicketDetalle(ticket)
+    } catch {
+      setTicketDetalle(null)
+      toast.add({
+        type: "error",
+        description: "No se pudo cargar el detalle del recibo.",
+      })
+    } finally {
+      setLoadingTicketDetalle(false)
+    }
+  }, [])
+
+  const aprobarTicket = useCallback(async (idTicket: number) => {
+    if (!idTicket) return
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        "/api/generales/tickets/aprobar",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id_ticket: Number(idTicket) }),
+        }
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.detail === "string"
+            ? payload.detail
+            : "No se pudo aprobar el recibo"
+        )
+      }
+
+      setTickets((prev) =>
+        prev.map((ticket) =>
+          ticket.id_ticket === idTicket
+            ? { ...ticket, estado: "APROBADO" }
+            : ticket
+        )
+      )
+      setTicketDetalle((prev) =>
+        prev ? { ...prev, estado: "APROBADO" } : prev
+      )
+      setDialogTicketDetalleAbierto(false)
+      setTicketDetalle(null)
+      toast.add({
+        type: "success",
+        description: "Recibo aprobado correctamente.",
+      })
+    } catch {
+      toast.add({
+        type: "error",
+        description: "No se pudo aprobar el recibo.",
+      })
+    }
+  }, [])
 
   const cargarDetalleViaje = useCallback(async (idViajeUsuario: string) => {
     let comentariosNuevos: ComentarioDelViaje[] = []
@@ -444,7 +530,23 @@ export function useVerRendiciones() {
     setViaticos([])
     setTickets([])
     setTicketImagenes({})
+    setTicketDetalle(null)
+    setDialogTicketDetalleAbierto(false)
     setViajeSeleccionado(index)
+  }
+
+  const abrirDetalleTicket = (ticket: TicketDelViaje) => {
+    setReciboSeleccionado(undefined)
+    setTicketDetalle(null)
+    setDialogTicketDetalleAbierto(true)
+    void cargarDetalleTicket(ticket.id_ticket)
+  }
+
+  const cerrarDetalleTicket = (open: boolean) => {
+    setDialogTicketDetalleAbierto(open)
+    if (!open) {
+      setTicketDetalle(null)
+    }
   }
 
   // ------------------- EFFECTS -------------------
@@ -612,6 +714,8 @@ export function useVerRendiciones() {
     comentarios,
     viaticos,
     tickets,
+    ticketDetalle,
+    loadingTicketDetalle,
     ticketImagenes,
     loadingTicketImagenes,
     monedas,
@@ -641,6 +745,7 @@ export function useVerRendiciones() {
     dialogAbierto,
     dialogComentarioAbierto,
     dialogViaticoEdicionAbierto,
+    dialogTicketDetalleAbierto,
 
     // actions
     aplicarFiltro,
@@ -653,6 +758,10 @@ export function useVerRendiciones() {
     abrirEdicionViatico,
     seleccionarEmpleado,
     seleccionarViaje,
+    abrirDetalleTicket,
+    cerrarDetalleTicket,
+    cargarDetalleTicket,
+    aprobarTicket,
     guardarComentario,
     guardarViaticoEditado,
     aprobarViatico,

@@ -8,10 +8,21 @@ import { useVerRendiciones } from "./useVerRendiciones"
 import { SeleccionarViajanteDialog } from "./(Dialogs)/SeleccionarViajanteDialog"
 import { EditarViaticoDialog } from "./(Dialogs)/EditarViaticoDialog"
 import { AgregarComentarioDialog } from "./(Dialogs)/AgregarComentarioDialog"
+import { DetalleTicketDialog } from "./(Dialogs)/DetalleTicketDialog"
 
 const truncarTexto = (texto: string, maxLength = 30) => {
   if (texto.length <= maxLength) return texto
   return `${texto.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`
+}
+
+const getEstadoTicket = (estado?: string | null) => {
+  const value = String(estado ?? "")
+    .trim()
+    .toUpperCase()
+
+  if (value === "POR APROBAR") return "POR APROBAR"
+  if (value.includes("APROB")) return "APROBADO"
+  return "PENDIENTE"
 }
 
 export default function VerRendiciones() {
@@ -22,7 +33,7 @@ export default function VerRendiciones() {
       {/* ---------- COLUMNA IZQUIERDA ---------- */}
       <div className="flex flex-1 flex-col gap-3 rounded">
         {/* Selección de viaje */}
-        <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
           <div className="flex flex-col justify-between">
             <div className="flex flex-1 flex-row gap-3">
               <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
@@ -66,7 +77,7 @@ export default function VerRendiciones() {
         </div>
 
         {/* Efectivo entregado */}
-        <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
           <h1 className="font-semibold">EFECTIVO ENTREGADO POR TESORERIA</h1>
           {r.loadingViaticos ? (
             <div className="flex flex-1 items-center justify-center rounded border border-dashed border-background6 p-3 text-sm opacity-60">
@@ -114,7 +125,7 @@ export default function VerRendiciones() {
       {/* ---------- COLUMNA DERECHA ---------- */}
       <div className="flex flex-1 flex-col gap-3">
         {/* Resumen + recibos */}
-        <div className="flex flex-2 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex min-h-175 flex-2 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
           <h1 className="font-semibold">
             {r.empleadoSeleccionadoInfo
               ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
@@ -123,23 +134,25 @@ export default function VerRendiciones() {
             {r.viajeActual?.nombre_viaje ?? "SIN VIAJE SELECCIONADO"}
           </h1>
           <div className="flex flex-row gap-2">
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO USD</p>
-              <p className="text-sm opacity-50">U$D 631,14</p>
+            <div className="flex flex-col gap-2">
+              <div className="flex-1 rounded bg-background3 p-3">
+                <p className="text-sm">TOTAL GASTO USD</p>
+                <p className="text-sm opacity-50">U$D 631,14</p>
+              </div>
+              <div className="flex-1 rounded bg-background3 p-3">
+                <p className="text-sm">TOTAL GASTO ARS</p>
+                <p className="text-sm opacity-50">AR$ 325.800</p>
+              </div>
             </div>
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO ARS</p>
-              <p className="text-sm opacity-50">AR$ 325.800</p>
-            </div>
-          </div>
-          <div className="flex flex-row gap-2">
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO EUR</p>
-              <p className="text-sm opacity-50">€UR 325.14</p>
-            </div>
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO LOCAL</p>
-              <p className="text-sm opacity-50">$ 325.14</p>
+            <div className="flex flex-col gap-2">
+              <div className="flex-1 rounded bg-background3 p-3">
+                <p className="text-sm">TOTAL GASTO EUR</p>
+                <p className="text-sm opacity-50">€UR 325.14</p>
+              </div>
+              <div className="flex-1 rounded bg-background3 p-3">
+                <p className="text-sm">TOTAL GASTO LOCAL</p>
+                <p className="text-sm opacity-50">$ 325.14</p>
+              </div>
             </div>
           </div>
 
@@ -166,15 +179,15 @@ export default function VerRendiciones() {
               onTagClick={(_tag, index) => r.setReciboSeleccionado(index)}
               extraClass="flex-1 min-h-0"
               rowClassName={(_tag, index) => {
-                const estado = (r.tickets[index]?.estado ?? "").toUpperCase()
-                if (estado === "PENDIENTE") return "bg-orangecremona/10"
-                if (estado === "APROBADO" || estado === "APROBADA")
-                  return "bg-greencremona/10"
+                const estado = getEstadoTicket(r.tickets[index]?.estado)
+                if (estado === "PENDIENTE") return "bg-redcremona/10"
+                if (estado === "POR APROBAR") return "bg-orangecremona/10"
+                if (estado === "APROBADO") return "bg-greencremona/10"
                 return ""
               }}
-              renderItem={({ tag, index, isSelected }) => {
+              renderItem={({ tag, index }) => {
                 const ticket = r.tickets[index]
-                const estado = (ticket?.estado ?? "").toUpperCase()
+                const estado = getEstadoTicket(ticket?.estado)
                 const montoTexto =
                   ticket?.monto !== null && ticket?.monto !== undefined
                     ? Number(ticket.monto).toLocaleString("es-AR", {
@@ -191,8 +204,10 @@ export default function VerRendiciones() {
 
                 return (
                   <div
-                    onClick={() => r.setReciboSeleccionado(index)}
-                    className={`flex w-full flex-1 cursor-pointer items-center gap-3 py-2 ${isSelected ? "opacity-100" : ""}`}
+                    onClick={() => {
+                      r.abrirDetalleTicket(ticket)
+                    }}
+                    className="flex w-full flex-1 cursor-pointer items-center gap-3 py-2"
                   >
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-background6 bg-background3">
                       {estaCargandoImagen ? (
@@ -219,13 +234,15 @@ export default function VerRendiciones() {
                           className={[
                             "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase",
                             estado === "PENDIENTE"
-                              ? "bg-orangecremona/20 text-orangecremona"
-                              : estado === "APROBADO" || estado === "APROBADA"
-                                ? "bg-greencremona/20 text-greencremona"
-                                : "bg-background4 text-foreground/70",
+                              ? "bg-redcremona/20 text-redcremona"
+                              : estado === "POR APROBAR"
+                                ? "bg-orangecremona/20 text-orangecremona"
+                                : estado === "APROBADO"
+                                  ? "bg-greencremona/20 text-greencremona"
+                                  : "bg-background4 text-foreground/70",
                           ].join(" ")}
                         >
-                          {estado || "PENDIENTE"}
+                          {estado}
                         </span>
                       </div>
                       <span className="text-xs opacity-70">
@@ -240,7 +257,7 @@ export default function VerRendiciones() {
         </div>
 
         {/* Comentarios */}
-        <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
           <div className="flex flex-row items-center justify-between gap-3">
             <h1 className="font-semibold">COMENTARIOS</h1>
             <Boton
@@ -309,6 +326,23 @@ export default function VerRendiciones() {
         texto={r.textoComentario}
         onTextoChange={r.setTextoComentario}
         onGuardar={r.guardarComentario}
+      />
+
+      <DetalleTicketDialog
+        open={r.dialogTicketDetalleAbierto}
+        onOpenChange={r.cerrarDetalleTicket}
+        ticket={r.ticketDetalle}
+        loading={r.loadingTicketDetalle}
+        imageUrl={
+          r.ticketDetalle
+            ? r.ticketImagenes[r.ticketDetalle.id_ticket]
+            : undefined
+        }
+        onAprobar={() =>
+          r.ticketDetalle
+            ? r.aprobarTicket(r.ticketDetalle.id_ticket)
+            : undefined
+        }
       />
     </div>
   )

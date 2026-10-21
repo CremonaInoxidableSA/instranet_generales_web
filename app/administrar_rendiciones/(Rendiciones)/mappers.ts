@@ -2,6 +2,7 @@ import type {
   ComentarioDelViaje,
   Empleado,
   TicketDelViaje,
+  TicketDetalle,
   ViaticoDelViaje,
   ViajeDelEmpleado,
 } from "./types"
@@ -96,11 +97,15 @@ export const mapTicketDelViaje = (
     item.id_moneda === null || item.id_moneda === undefined
       ? null
       : Number(item.id_moneda)
-  const estado = String(
+  const estadoRaw = String(
     item.estado ?? item.estado_ticket_usuario ?? item.estado_ticket_admin ?? ""
-  )
-    .trim()
-    .toUpperCase()
+  ).trim()
+  const estado =
+    estadoRaw.toUpperCase() === "POR APROBAR"
+      ? "POR APROBAR"
+      : estadoRaw.toUpperCase().includes("APROB")
+        ? "APROBADO"
+        : "PENDIENTE"
 
   if (!Number.isFinite(idTicket) && !nombreImagen) return null
 
@@ -109,6 +114,59 @@ export const mapTicketDelViaje = (
     nombre_imagen: nombreImagen || "Recibo sin nombre",
     monto: Number.isFinite(montoValue) ? montoValue : null,
     id_moneda: Number.isFinite(idMonedaValue) ? idMonedaValue : null,
-    estado: estado || "PENDIENTE",
+    estado,
+  }
+}
+
+export const mapTicketDetalle = (
+  item: Record<string, unknown>
+): TicketDetalle | null => {
+  const idTicket = Number(item.id_ticket ?? item.id ?? 0)
+  if (!Number.isFinite(idTicket)) return null
+
+  const estadoRaw = String(item.estado ?? "").trim()
+  const estado =
+    estadoRaw.toUpperCase() === "POR APROBAR"
+      ? "POR APROBAR"
+      : estadoRaw.toUpperCase().includes("APROB")
+        ? "APROBADO"
+        : "PENDIENTE"
+
+  const montoValue =
+    item.monto === null || item.monto === undefined ? null : Number(item.monto)
+
+  return {
+    id_ticket: idTicket,
+    nombre_imagen: String(item.nombre_imagen ?? "Recibo sin nombre").trim(),
+    fecha_gasto:
+      item.fecha_gasto === null || item.fecha_gasto === undefined
+        ? null
+        : String(item.fecha_gasto),
+    monto: Number.isFinite(montoValue) ? montoValue : null,
+    id_medio_pago:
+      item.id_medio_pago === null || item.id_medio_pago === undefined
+        ? null
+        : Number(item.id_medio_pago),
+    id_moneda:
+      item.id_moneda === null || item.id_moneda === undefined
+        ? null
+        : Number(item.id_moneda),
+    id_concepto:
+      item.id_concepto === null || item.id_concepto === undefined
+        ? null
+        : Number(item.id_concepto),
+    estado,
+    nombre_medio_pago:
+      item.nombre_medio_pago === null || item.nombre_medio_pago === undefined
+        ? null
+        : String(item.nombre_medio_pago),
+    nombre_moneda:
+      item.nombre_moneda === null || item.nombre_moneda === undefined
+        ? null
+        : String(item.nombre_moneda),
+    nombre_concepto:
+      item.nombre_concepto === null || item.nombre_concepto === undefined
+        ? null
+        : String(item.nombre_concepto),
   }
 }
