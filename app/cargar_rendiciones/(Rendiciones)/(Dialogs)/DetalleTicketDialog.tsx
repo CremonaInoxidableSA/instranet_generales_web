@@ -19,7 +19,7 @@ type Props = {
   ticket: TicketDetalle | null
   loading: boolean
   imageUrl?: string
-  onAprobar: () => void
+  onAprobar?: () => void
 }
 
 const getEstadoTicket = (estado?: string | null) => {
@@ -162,7 +162,7 @@ export function DetalleTicketDialog({
 
         <DialogFooter className="gap-2">
           <Boton onClick={() => onOpenChange(false)}>Cerrar</Boton>
-          {ticket?.estado === "POR APROBAR" && (
+          {onAprobar && ticket?.estado === "POR APROBAR" && (
             <Boton
               onClick={onAprobar}
               extraClass="border-greencremona bg-greencremona/20 text-greencremona hover:bg-greencremona/30"

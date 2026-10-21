@@ -55,6 +55,8 @@ export function useVerRendiciones() {
   const [dialogComentarioAbierto, setDialogComentarioAbierto] = useState(false)
   const [dialogViaticoEdicionAbierto, setDialogViaticoEdicionAbierto] =
     useState(false)
+  const [dialogAprobacionViaticoAbierto, setDialogAprobacionViaticoAbierto] =
+    useState(false)
   const [dialogTicketDetalleAbierto, setDialogTicketDetalleAbierto] =
     useState(false)
 
@@ -63,6 +65,8 @@ export function useVerRendiciones() {
   const [loadingTicketDetalle, setLoadingTicketDetalle] = useState(false)
   const [viaticoEditando, setViaticoEditando] =
     useState<ViaticoEditando | null>(null)
+  const [viaticoAprobacion, setViaticoAprobacion] =
+    useState<ViaticoDelViaje | null>(null)
 
   const [filtroInput, setFiltroInput] = useState("")
   const [filtro, setFiltro] = useState("")
@@ -430,8 +434,10 @@ export function useVerRendiciones() {
     }
   }
 
-  const aprobarViatico = async () => {
-    if (!viaticoEditando || !idViajeUsuarioActual) {
+  const aprobarViatico = async (idViatico?: number) => {
+    const idAprobacion = Number(idViatico ?? viaticoEditando?.id_viatico ?? 0)
+
+    if (!idAprobacion || !idViajeUsuarioActual) {
       toast.add({
         type: "error",
         description: "No hay un viático válido para aprobar.",
@@ -445,7 +451,7 @@ export function useVerRendiciones() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id_viatico: Number(viaticoEditando.id_viatico),
+            id_viatico: idAprobacion,
           }),
         }
       )
@@ -459,7 +465,9 @@ export function useVerRendiciones() {
       }
       await cargarDetalleViaje(String(idViajeUsuarioActual))
       setDialogViaticoEdicionAbierto(false)
+      setDialogAprobacionViaticoAbierto(false)
       setViaticoEditando(null)
+      setViaticoAprobacion(null)
       toast.add({
         type: "success",
         description: "Viático aprobado correctamente.",
@@ -504,6 +512,11 @@ export function useVerRendiciones() {
     if (!open) setViaticoEditando(null)
   }
 
+  const cerrarDialogAprobacionViatico = (open: boolean) => {
+    setDialogAprobacionViaticoAbierto(open)
+    if (!open) setViaticoAprobacion(null)
+  }
+
   const abrirEdicionViatico = (viatico: ViaticoDelViaje) => {
     setViaticoEditando({
       id_viatico: viatico.id_viatico,
@@ -512,6 +525,16 @@ export function useVerRendiciones() {
       monto_devuelto: String(viatico.monto_devuelto ?? ""),
     })
     setDialogViaticoEdicionAbierto(true)
+  }
+
+  const abrirConfirmacionAprobacionViatico = (viatico: ViaticoDelViaje) => {
+    setViaticoAprobacion(viatico)
+    setDialogAprobacionViaticoAbierto(true)
+  }
+
+  const confirmarAprobacionViatico = async () => {
+    if (!viaticoAprobacion) return
+    await aprobarViatico(viaticoAprobacion.id_viatico)
   }
 
   const seleccionarEmpleado = (id: string) => {
@@ -745,6 +768,8 @@ export function useVerRendiciones() {
     dialogAbierto,
     dialogComentarioAbierto,
     dialogViaticoEdicionAbierto,
+    dialogAprobacionViaticoAbierto,
+    viaticoAprobacion,
     dialogTicketDetalleAbierto,
 
     // actions
@@ -755,7 +780,10 @@ export function useVerRendiciones() {
     abrirDialogComentario,
     cerrarDialogComentario,
     cerrarDialogEdicion,
+    cerrarDialogAprobacionViatico,
     abrirEdicionViatico,
+    abrirConfirmacionAprobacionViatico,
+    confirmarAprobacionViatico,
     seleccionarEmpleado,
     seleccionarViaje,
     abrirDetalleTicket,

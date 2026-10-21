@@ -20,7 +20,6 @@ type Props = {
   monedas: Moneda[]
   loadingMonedas: boolean
   onGuardar: () => void
-  onAprobar: () => void
 }
 
 export function EditarViaticoDialog({
@@ -31,15 +30,20 @@ export function EditarViaticoDialog({
   monedas,
   loadingMonedas,
   onGuardar,
-  onAprobar,
 }: Props) {
+  const esCreacion = viaticoEditando?.id_viatico === 0
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="z-100 bg-background2 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Editar viático</DialogTitle>
+          <DialogTitle>
+            {esCreacion ? "Crear viático" : "Editar viático"}
+          </DialogTitle>
           <DialogDescription>
-            Actualizá la moneda y los montos del viático seleccionado.
+            {esCreacion
+              ? "Ingresá la moneda y los montos para registrar el viático."
+              : "Actualizá la moneda y los montos del viático seleccionado."}
           </DialogDescription>
         </DialogHeader>
 
@@ -105,8 +109,7 @@ export function EditarViaticoDialog({
 
         <DialogFooter className="gap-2">
           <Boton onClick={() => onOpenChange(false)}>Cancelar</Boton>
-          <Boton onClick={onAprobar}>Aprobar</Boton>
-          <Boton onClick={onGuardar}>Guardar</Boton>
+          <Boton onClick={onGuardar}>{esCreacion ? "Crear" : "Guardar"}</Boton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

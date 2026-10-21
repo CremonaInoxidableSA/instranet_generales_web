@@ -1,12 +1,12 @@
 "use client"
 
 import Image from "next/image"
-import { Check, Pencil } from "lucide-react"
+import { Check } from "lucide-react"
 import { Boton, BotonIcono, TextScrollArea } from "@/components/components"
+import { AlertDialogTemplate } from "@/components/componentsClient"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useVerRendiciones } from "./useVerRendiciones"
 import { SeleccionarViajanteDialog } from "./(Dialogs)/SeleccionarViajanteDialog"
-import { EditarViaticoDialog } from "./(Dialogs)/EditarViaticoDialog"
 import { AgregarComentarioDialog } from "./(Dialogs)/AgregarComentarioDialog"
 import { DetalleTicketDialog } from "./(Dialogs)/DetalleTicketDialog"
 
@@ -97,7 +97,6 @@ export default function VerRendiciones() {
               renderItem={({ tag, index }) => {
                 const v = r.viaticos[index]
                 const aprobado = Boolean(v?.estado)
-                const Icono = aprobado ? Check : Pencil
                 return (
                   <div className="flex w-full flex-1 items-center justify-between gap-2">
                     <div className="flex flex-1 py-2">
@@ -105,13 +104,17 @@ export default function VerRendiciones() {
                     </div>
                     <BotonIcono
                       disabled={aprobado}
-                      icono={Icono}
-                      buttonClass="text-bluecremona disabled:pointer-events-none disabled:opacity-0"
-                      aria-label={`Editar viático ${index + 1}`}
+                      icono={Check}
+                      buttonClass={
+                        aprobado
+                          ? "text-greencremona disabled:pointer-events-none disabled:opacity-0"
+                          : "text-foreground/60 hover:text-greencremona"
+                      }
+                      aria-label={`Aprobar viático ${index + 1}`}
                       onClick={(event) => {
                         event.stopPropagation()
-                        if (aprobado) return
-                        r.abrirEdicionViatico(v)
+                        if (aprobado || !v) return
+                        r.abrirConfirmacionAprobacionViatico(v)
                       }}
                     />
                   </div>
@@ -309,15 +312,17 @@ export default function VerRendiciones() {
         onPaginaSiguiente={r.paginaSiguiente}
       />
 
-      <EditarViaticoDialog
-        open={r.dialogViaticoEdicionAbierto}
-        onOpenChange={r.cerrarDialogEdicion}
-        viaticoEditando={r.viaticoEditando}
-        onChange={r.setViaticoEditando}
-        monedas={r.monedas}
-        loadingMonedas={r.loadingMonedas}
-        onGuardar={r.guardarViaticoEditado}
-        onAprobar={r.aprobarViatico}
+      <AlertDialogTemplate
+        open={r.dialogAprobacionViaticoAbierto}
+        onOpenChange={r.cerrarDialogAprobacionViatico}
+        title="Aprobar viático"
+        description={
+          r.viaticoAprobacion
+            ? `¿Querés aprobar este viático de ${r.viaticoAprobacion.moneda}?`
+            : "¿Querés aprobar este viático?"
+        }
+        onConfirm={r.confirmarAprobacionViatico}
+        confirmText="Aprobar"
       />
 
       <AgregarComentarioDialog

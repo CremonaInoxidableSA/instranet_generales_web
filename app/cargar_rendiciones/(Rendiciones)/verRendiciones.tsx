@@ -42,7 +42,7 @@ export default function VerRendiciones() {
             <Boton
               placeholder="AGREGAR VIATICO"
               extraClass="border-2 border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
-              onClick={() => undefined}
+              onClick={r.abrirCreacionViatico}
             />
           </div>
           {r.loadingViaticos ? (
@@ -171,7 +171,6 @@ export default function VerRendiciones() {
         monedas={r.monedas}
         loadingMonedas={r.loadingMonedas}
         onGuardar={r.guardarViaticoEditado}
-        onAprobar={r.aprobarViatico}
       />
 
       <AgregarComentarioDialog
@@ -190,11 +189,6 @@ export default function VerRendiciones() {
         imageUrl={
           r.ticketDetalle
             ? r.ticketImagenes[r.ticketDetalle.id_ticket]
-            : undefined
-        }
-        onAprobar={() =>
-          r.ticketDetalle
-            ? r.aprobarTicket(r.ticketDetalle.id_ticket)
             : undefined
         }
       />

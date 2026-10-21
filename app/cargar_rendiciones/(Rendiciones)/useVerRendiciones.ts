@@ -383,13 +383,15 @@ export function useVerRendiciones() {
     if (!viaticoEditando || !idViajeUsuarioActual) {
       toast.add({
         type: "error",
-        description: "No hay un viático válido para editar.",
+        description: "No hay un viático válido para guardar.",
       })
       return
     }
+
     const idMoneda = Number(viaticoEditando.id_moneda)
     const montoEntregado = Number(viaticoEditando.monto_entregado || 0)
     const montoDevuelto = Number(viaticoEditando.monto_devuelto || 0)
+
     if (!Number.isFinite(idMoneda) || !Number.isFinite(montoEntregado)) {
       toast.add({
         type: "error",
@@ -397,39 +399,63 @@ export function useVerRendiciones() {
       })
       return
     }
+
     try {
-      const response = await fetchWithConnectionCheck(
-        "/api/generales/viaticos/editar",
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id_viatico: Number(viaticoEditando.id_viatico),
-            id_moneda: idMoneda,
-            monto_entregado: montoEntregado,
-            monto_devuelto: montoDevuelto,
-          }),
-        }
-      )
+      const endpoint =
+        viaticoEditando.id_viatico > 0
+          ? "/api/generales/viaticos/editar"
+          : "/api/generales/viaticos/crear"
+      const method = viaticoEditando.id_viatico > 0 ? "PUT" : "POST"
+
+      const body =
+        viaticoEditando.id_viatico > 0
+          ? {
+              id_viatico: Number(viaticoEditando.id_viatico),
+              id_moneda: idMoneda,
+              monto_entregado: montoEntregado,
+              monto_devuelto: montoDevuelto,
+            }
+          : {
+              id_viaje_usuario: Number(idViajeUsuarioActual),
+              id_moneda: idMoneda,
+              monto_entregado: montoEntregado,
+              monto_devuelto: montoDevuelto,
+            }
+
+      const response = await fetchWithConnectionCheck(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
       const payload = await response.json().catch(() => ({}))
       if (!response.ok) {
         throw new Error(
           typeof payload?.detail === "string"
             ? payload.detail
-            : "No se pudo actualizar el viático"
+            : viaticoEditando.id_viatico > 0
+              ? "No se pudo actualizar el viático"
+              : "No se pudo crear el viático"
         )
       }
+
       await cargarDetalleViaje(String(idViajeUsuarioActual))
       setDialogViaticoEdicionAbierto(false)
       setViaticoEditando(null)
       toast.add({
         type: "success",
-        description: "Viático actualizado correctamente.",
+        description:
+          viaticoEditando.id_viatico > 0
+            ? "Viático actualizado correctamente."
+            : "Viático creado correctamente.",
       })
     } catch {
       toast.add({
         type: "error",
-        description: "No se pudo actualizar el viático.",
+        description:
+          viaticoEditando.id_viatico > 0
+            ? "No se pudo actualizar el viático."
+            : "No se pudo crear el viático.",
       })
     }
   }
@@ -514,6 +540,24 @@ export function useVerRendiciones() {
       id_moneda: String(viatico.id_moneda ?? ""),
       monto_entregado: String(viatico.monto_entregado ?? ""),
       monto_devuelto: String(viatico.monto_devuelto ?? ""),
+    })
+    setDialogViaticoEdicionAbierto(true)
+  }
+
+  const abrirCreacionViatico = () => {
+    if (!idViajeUsuarioActual) {
+      toast.add({
+        type: "error",
+        description: "Seleccioná un viaje antes de crear un viático.",
+      })
+      return
+    }
+
+    setViaticoEditando({
+      id_viatico: 0,
+      id_moneda: "",
+      monto_entregado: "",
+      monto_devuelto: "",
     })
     setDialogViaticoEdicionAbierto(true)
   }
@@ -763,6 +807,7 @@ export function useVerRendiciones() {
     cerrarDialogComentario,
     cerrarDialogEdicion,
     abrirEdicionViatico,
+    abrirCreacionViatico,
     seleccionarEmpleado,
     seleccionarViaje,
     abrirDetalleTicket,
