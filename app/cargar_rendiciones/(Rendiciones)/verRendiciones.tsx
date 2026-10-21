@@ -42,6 +42,7 @@ export default function VerRendiciones() {
             <Boton
               placeholder="AGREGAR VIATICO"
               extraClass="border-2 border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+              disabled={!r.idViajeUsuarioActual}
               onClick={r.abrirCreacionViatico}
             />
           </div>
@@ -122,6 +123,7 @@ export default function VerRendiciones() {
             <Boton
               placeholder="AGREGAR RECIBOS"
               extraClass="border-2 border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+              disabled={!r.idViajeUsuarioActual}
               onClick={() => undefined}
             />
           </div>

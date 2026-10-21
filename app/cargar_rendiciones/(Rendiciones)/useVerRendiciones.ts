@@ -574,6 +574,21 @@ export function useVerRendiciones() {
   }
 
   const seleccionarViaje = (index: number) => {
+    if (index < 0 || index >= viajes.length) {
+      setViajeSeleccionado(undefined)
+      setComentarios([])
+      setViaticos([])
+      setTickets([])
+      setTicketImagenes({})
+      setTicketDetalle(null)
+      setDialogTicketDetalleAbierto(false)
+      return
+    }
+
+    if (viajeSeleccionado === index) {
+      return
+    }
+
     setComentarios([])
     setViaticos([])
     setTickets([])
