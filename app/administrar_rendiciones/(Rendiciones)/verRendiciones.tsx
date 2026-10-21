@@ -133,23 +133,23 @@ export default function VerRendiciones() {
             {" | "}
             {r.viajeActual?.nombre_viaje ?? "SIN VIAJE SELECCIONADO"}
           </h1>
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-2">
-              <div className="flex-1 rounded bg-background3 p-3">
+          <div className="flex w-full flex-col gap-2 xl:flex-row">
+            <div className="flex w-full flex-row gap-2">
+              <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO USD</p>
                 <p className="text-sm opacity-50">U$D 631,14</p>
               </div>
-              <div className="flex-1 rounded bg-background3 p-3">
+              <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO ARS</p>
                 <p className="text-sm opacity-50">AR$ 325.800</p>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex-1 rounded bg-background3 p-3">
+            <div className="flex w-full flex-row gap-2">
+              <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO EUR</p>
                 <p className="text-sm opacity-50">€UR 325.14</p>
               </div>
-              <div className="flex-1 rounded bg-background3 p-3">
+              <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO LOCAL</p>
                 <p className="text-sm opacity-50">$ 325.14</p>
               </div>

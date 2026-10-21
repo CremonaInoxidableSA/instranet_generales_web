@@ -1,4 +1,4 @@
-import VerRendiciones from "./verRendiciones"
+import VerRendiciones from "./(Rendiciones)/verRendiciones"
 
 export default function CrearRendiciones() {
   return (

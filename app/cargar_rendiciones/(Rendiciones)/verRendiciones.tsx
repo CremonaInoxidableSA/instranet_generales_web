@@ -3,10 +3,9 @@
 import { Check, Pencil } from "lucide-react"
 import { Boton, BotonIcono, TextScrollArea } from "@/components/components"
 import { useVerRendiciones } from "./useVerRendiciones"
-import { SeleccionarViajanteDialog } from "./(Dialogs)/SeleccionarViajanteDialog"
-import { AgregarViaticoDialog } from "./(Dialogs)/AgregarViaticoDialog"
 import { EditarViaticoDialog } from "./(Dialogs)/EditarViaticoDialog"
 import { AgregarComentarioDialog } from "./(Dialogs)/AgregarComentarioDialog"
+import { DetalleTicketDialog } from "./(Dialogs)/DetalleTicketDialog"
 
 export default function VerRendiciones() {
   const r = useVerRendiciones()
@@ -16,32 +15,9 @@ export default function VerRendiciones() {
       {/* ---------- COLUMNA IZQUIERDA ---------- */}
       <div className="flex flex-1 flex-col gap-3 rounded">
         {/* Selección de viaje */}
-        <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
           <div className="flex flex-col justify-between">
-            <div className="flex flex-1 flex-row gap-3">
-              <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
-              <Boton
-                onClick={r.abrirDialogViajante}
-                disabled={r.loadingEmpleados}
-                extraClass="rounded border-2 border-bluecremona bg-bluecremona/20 text-sm text-bluecremona hover:bg-bluecremona/30"
-              >
-                <span>
-                  {r.loadingEmpleados
-                    ? "Cargando empleados..."
-                    : r.empleadoSeleccionadoInfo
-                      ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
-                      : "Seleccionar viajante"}
-                </span>
-              </Boton>
-            </div>
-            {r.empleadoSeleccionadoInfo && (
-              <p className="text-xs opacity-70">
-                Viajante seleccionado: {r.empleadoSeleccionadoInfo.legajo}
-                {r.empleadoSeleccionadoInfo.legajo ? " · " : ""}
-                {r.empleadoSeleccionadoInfo.nombre}{" "}
-                {r.empleadoSeleccionadoInfo.apellido}
-              </p>
-            )}
+            <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
           </div>
 
           {r.loadingViajes ? (
@@ -60,14 +36,13 @@ export default function VerRendiciones() {
         </div>
 
         {/* Efectivo entregado */}
-        <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
-          <div className="flex flex-row items-center justify-between gap-3">
+        <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
+          <div className="flex items-center justify-between gap-3">
             <h1 className="font-semibold">EFECTIVO ENTREGADO POR TESORERIA</h1>
             <Boton
-              extraClass="bg-bluecremona/20 hover:bg-bluecremona/60 text-bluecremona border-2 border-bluecremona"
-              placeholder="AGREGAR EFECTIVO"
-              disabled={!r.idViajeUsuarioActual}
-              onClick={r.abrirDialogViatico}
+              placeholder="AGREGAR VIATICO"
+              extraClass="border-2 border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+              onClick={() => undefined}
             />
           </div>
           {r.loadingViaticos ? (
@@ -116,46 +91,44 @@ export default function VerRendiciones() {
       {/* ---------- COLUMNA DERECHA ---------- */}
       <div className="flex flex-1 flex-col gap-3">
         {/* Resumen + recibos */}
-        <div className="flex flex-2 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex min-h-175 flex-2 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
           <h1 className="font-semibold">
-            {r.empleadoSeleccionadoInfo
-              ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
-              : "SIN VIAJANTE"}
-            {" | "}
-            {r.viajeActual?.nombre_viaje ?? "SIN VIAJE"}
+            {r.viajeActual?.nombre_viaje ?? "SIN VIAJE SELECCIONADO"}
           </h1>
-          <div className="flex flex-row gap-2">
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO USD</p>
-              <p className="text-sm opacity-50">U$D 631,14</p>
+          <div className="flex w-full flex-col gap-2 xl:flex-row">
+            <div className="flex w-full flex-row gap-2">
+              <div className="flex-1 rounded bg-background3 p-2">
+                <p className="text-sm">TOTAL GASTO USD</p>
+                <p className="text-sm opacity-50">U$D 631,14</p>
+              </div>
+              <div className="flex-1 rounded bg-background3 p-2">
+                <p className="text-sm">TOTAL GASTO ARS</p>
+                <p className="text-sm opacity-50">AR$ 325.800</p>
+              </div>
             </div>
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO ARS</p>
-              <p className="text-sm opacity-50">AR$ 325.800</p>
-            </div>
-          </div>
-          <div className="flex flex-row gap-2">
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO EUR</p>
-              <p className="text-sm opacity-50">€UR 325.14</p>
-            </div>
-            <div className="flex-1 rounded bg-background3 p-3">
-              <p className="text-md">TOTAL GASTO LOCAL</p>
-              <p className="text-sm opacity-50">$ 325.14</p>
+            <div className="flex w-full flex-row gap-2">
+              <div className="flex-1 rounded bg-background3 p-2">
+                <p className="text-sm">TOTAL GASTO EUR</p>
+                <p className="text-sm opacity-50">€UR 325.14</p>
+              </div>
+              <div className="flex-1 rounded bg-background3 p-2">
+                <p className="text-sm">TOTAL GASTO LOCAL</p>
+                <p className="text-sm opacity-50">$ 325.14</p>
+              </div>
             </div>
           </div>
 
-          <TextScrollArea
-            placeholder="RECIBOS"
-            tags={[]}
-            selectedIndex={r.reciboSeleccionado}
-            onTagClick={(_tag, index) => r.setReciboSeleccionado(index)}
-            extraClass="flex-1 min-h-0"
-          />
+          <div className="flex flex-1 items-center justify-center rounded border border-dashed border-background6 bg-background3/60 p-4">
+            <Boton
+              placeholder="AGREGAR RECIBOS"
+              extraClass="border-2 border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+              onClick={() => undefined}
+            />
+          </div>
         </div>
 
         {/* Comentarios */}
-        <div className="flex flex-1 flex-col gap-3 rounded bg-background2 p-5">
+        <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
           <div className="flex flex-row items-center justify-between gap-3">
             <h1 className="font-semibold">COMENTARIOS</h1>
             <Boton
@@ -190,31 +163,6 @@ export default function VerRendiciones() {
       </div>
 
       {/* ---------- DIÁLOGOS ---------- */}
-      <SeleccionarViajanteDialog
-        open={r.dialogAbierto}
-        onOpenChange={r.cerrarDialogViajante}
-        loading={r.loadingEmpleados}
-        filtroInput={r.filtroInput}
-        onFiltroInputChange={r.setFiltroInput}
-        onAplicarFiltro={r.aplicarFiltro}
-        onLimpiarFiltro={r.limpiarFiltro}
-        filasPagina={r.filasPagina}
-        empleadoSeleccionado={r.empleadoSeleccionado}
-        onSeleccionarEmpleado={r.seleccionarEmpleado}
-        paginaActual={r.paginaActual}
-        totalPaginas={r.totalPaginas}
-        onPaginaAnterior={r.paginaAnterior}
-        onPaginaSiguiente={r.paginaSiguiente}
-      />
-
-      <AgregarViaticoDialog
-        open={r.dialogViaticoAbierto}
-        onOpenChange={r.cerrarDialogViatico}
-        value={r.nuevoViatico}
-        onChange={r.setNuevoViatico}
-        onGuardar={r.guardarViatico}
-      />
-
       <EditarViaticoDialog
         open={r.dialogViaticoEdicionAbierto}
         onOpenChange={r.cerrarDialogEdicion}
@@ -232,6 +180,23 @@ export default function VerRendiciones() {
         texto={r.textoComentario}
         onTextoChange={r.setTextoComentario}
         onGuardar={r.guardarComentario}
+      />
+
+      <DetalleTicketDialog
+        open={r.dialogTicketDetalleAbierto}
+        onOpenChange={r.cerrarDetalleTicket}
+        ticket={r.ticketDetalle}
+        loading={r.loadingTicketDetalle}
+        imageUrl={
+          r.ticketDetalle
+            ? r.ticketImagenes[r.ticketDetalle.id_ticket]
+            : undefined
+        }
+        onAprobar={() =>
+          r.ticketDetalle
+            ? r.aprobarTicket(r.ticketDetalle.id_ticket)
+            : undefined
+        }
       />
     </div>
   )

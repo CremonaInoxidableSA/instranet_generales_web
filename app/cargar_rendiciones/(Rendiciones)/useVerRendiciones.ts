@@ -1,11 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "@/components/ui/toast"
+import { useUser } from "@/context/userContext"
 import { fetchWithConnectionCheck } from "@/lib/connectionManager"
 import {
   mapComentarioDelViaje,
   mapEmpleado,
+  mapTicketDelViaje,
+  mapTicketDetalle,
   mapViaticoDelViaje,
   mapViajeDelEmpleado,
   normalizar,
@@ -14,7 +17,8 @@ import type {
   ComentarioDelViaje,
   Empleado,
   Moneda,
-  NuevoViatico,
+  TicketDelViaje,
+  TicketDetalle,
   ViaticoDelViaje,
   ViaticoEditando,
   ViajeDelEmpleado,
@@ -22,13 +26,10 @@ import type {
 
 const FILAS_POR_PAGINA = 6
 
-const VIATICO_VACIO: NuevoViatico = {
-  id_moneda: "",
-  monto_entregado: "",
-  monto_devuelto: "",
-}
-
 export function useVerRendiciones() {
+  const { id_current_user } = useUser()
+  const usuarioActualId = (id_current_user ?? "").trim()
+
   // ------------------- STATE -------------------
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("")
@@ -40,20 +41,30 @@ export function useVerRendiciones() {
   const [loadingViajes, setLoadingViajes] = useState(false)
   const [loadingComentarios, setLoadingComentarios] = useState(false)
   const [loadingViaticos, setLoadingViaticos] = useState(false)
+  const [loadingTickets, setLoadingTickets] = useState(false)
   const [loadingMonedas, setLoadingMonedas] = useState(false)
 
   const [comentarios, setComentarios] = useState<ComentarioDelViaje[]>([])
   const [viaticos, setViaticos] = useState<ViaticoDelViaje[]>([])
+  const [tickets, setTickets] = useState<TicketDelViaje[]>([])
+  const [ticketImagenes, setTicketImagenes] = useState<Record<number, string>>(
+    {}
+  )
+  const [loadingTicketImagenes, setLoadingTicketImagenes] = useState<
+    Record<number, boolean>
+  >({})
   const [monedas, setMonedas] = useState<Moneda[]>([])
 
   const [dialogAbierto, setDialogAbierto] = useState(false)
-  const [dialogViaticoAbierto, setDialogViaticoAbierto] = useState(false)
   const [dialogComentarioAbierto, setDialogComentarioAbierto] = useState(false)
   const [dialogViaticoEdicionAbierto, setDialogViaticoEdicionAbierto] =
     useState(false)
+  const [dialogTicketDetalleAbierto, setDialogTicketDetalleAbierto] =
+    useState(false)
 
   const [textoComentario, setTextoComentario] = useState("")
-  const [nuevoViatico, setNuevoViatico] = useState<NuevoViatico>(VIATICO_VACIO)
+  const [ticketDetalle, setTicketDetalle] = useState<TicketDetalle | null>(null)
+  const [loadingTicketDetalle, setLoadingTicketDetalle] = useState(false)
   const [viaticoEditando, setViaticoEditando] =
     useState<ViaticoEditando | null>(null)
 
@@ -113,9 +124,121 @@ export function useVerRendiciones() {
     setPagina((actual) => Math.min(actual + 1, totalPaginas - 1))
 
   // ------------------- CARGA DE DATOS -------------------
-  const cargarDetalleViaje = async (idViajeUsuario: string) => {
+  const cargarImagenTicket = async (idTicket: number) => {
+    if (!idTicket) return
+
+    setLoadingTicketImagenes((prev) => ({ ...prev, [idTicket]: true }))
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        `/api/generales/tickets/imagen?id_ticket=${encodeURIComponent(String(idTicket))}`
+      )
+      if (!response.ok) throw new Error("Error al obtener la imagen del ticket")
+
+      const blob = await response.blob()
+      if (blob.size === 0) throw new Error("Imagen vacía")
+
+      const objectUrl = URL.createObjectURL(blob)
+      setTicketImagenes((prev) => ({ ...prev, [idTicket]: objectUrl }))
+    } catch {
+      setTicketImagenes((prev) => {
+        const next = { ...prev }
+        delete next[idTicket]
+        return next
+      })
+    } finally {
+      setLoadingTicketImagenes((prev) => {
+        const next = { ...prev }
+        delete next[idTicket]
+        return next
+      })
+    }
+  }
+
+  const cargarDetalleTicket = useCallback(async (idTicket: number) => {
+    if (!idTicket) return
+
+    try {
+      setLoadingTicketDetalle(true)
+      const response = await fetchWithConnectionCheck(
+        `/api/generales/tickets/detalles?id_ticket=${encodeURIComponent(String(idTicket))}`
+      )
+      if (!response.ok)
+        throw new Error("Error al obtener el detalle del ticket")
+      const body = await response.json()
+      const ticket =
+        (body?.ticket && typeof body.ticket === "object"
+          ? mapTicketDetalle(body.ticket as Record<string, unknown>)
+          : null) ??
+        (Array.isArray(body)
+          ? mapTicketDetalle(body[0] as Record<string, unknown>)
+          : null)
+
+      if (!ticket) {
+        throw new Error("No se encontró detalle del ticket")
+      }
+
+      setTicketDetalle(ticket)
+    } catch {
+      setTicketDetalle(null)
+      toast.add({
+        type: "error",
+        description: "No se pudo cargar el detalle del recibo.",
+      })
+    } finally {
+      setLoadingTicketDetalle(false)
+    }
+  }, [])
+
+  const aprobarTicket = useCallback(async (idTicket: number) => {
+    if (!idTicket) return
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        "/api/generales/tickets/aprobar",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id_ticket: Number(idTicket) }),
+        }
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.detail === "string"
+            ? payload.detail
+            : "No se pudo aprobar el recibo"
+        )
+      }
+
+      setTickets((prev) =>
+        prev.map((ticket) =>
+          ticket.id_ticket === idTicket
+            ? { ...ticket, estado: "APROBADO" }
+            : ticket
+        )
+      )
+      setTicketDetalle((prev) =>
+        prev ? { ...prev, estado: "APROBADO" } : prev
+      )
+      setDialogTicketDetalleAbierto(false)
+      setTicketDetalle(null)
+      toast.add({
+        type: "success",
+        description: "Recibo aprobado correctamente.",
+      })
+    } catch {
+      toast.add({
+        type: "error",
+        description: "No se pudo aprobar el recibo.",
+      })
+    }
+  }, [])
+
+  const cargarDetalleViaje = useCallback(async (idViajeUsuario: string) => {
     let comentariosNuevos: ComentarioDelViaje[] = []
     let viaticosNuevos: ViaticoDelViaje[] = []
+    let ticketsNuevos: TicketDelViaje[] = []
 
     try {
       setLoadingComentarios(true)
@@ -167,9 +290,42 @@ export function useVerRendiciones() {
       setLoadingViaticos(false)
     }
 
+    try {
+      setLoadingTickets(true)
+      const response = await fetchWithConnectionCheck(
+        `/api/generales/tickets/lista?id_viaje_usuario=${encodeURIComponent(idViajeUsuario)}`
+      )
+      if (!response.ok) throw new Error("Error al obtener tickets")
+      const body = await response.json()
+      const list: Record<string, unknown>[] = Array.isArray(body?.tickets)
+        ? body.tickets
+        : Array.isArray(body?.data)
+          ? body.data
+          : Array.isArray(body)
+            ? body
+            : []
+      ticketsNuevos = list
+        .map(mapTicketDelViaje)
+        .filter((x): x is TicketDelViaje => x !== null)
+    } catch {
+      ticketsNuevos = []
+      toast.add({
+        type: "error",
+        description: "No se pudieron cargar los recibos del viaje",
+      })
+    } finally {
+      setLoadingTickets(false)
+    }
+
     setComentarios(comentariosNuevos)
     setViaticos(viaticosNuevos)
-  }
+    setTickets(ticketsNuevos)
+    setTicketImagenes({})
+
+    for (const ticket of ticketsNuevos) {
+      void cargarImagenTicket(ticket.id_ticket)
+    }
+  }, [])
 
   // ------------------- HANDLERS: GUARDAR / APROBAR -------------------
   const guardarComentario = async () => {
@@ -219,58 +375,6 @@ export function useVerRendiciones() {
       toast.add({
         type: "error",
         description: "No se pudo guardar el comentario.",
-      })
-    }
-  }
-
-  const guardarViatico = async () => {
-    if (!idViajeUsuarioActual) {
-      toast.add({
-        type: "error",
-        description: "Seleccioná un viaje antes de agregar el viático.",
-      })
-      return
-    }
-    const idMoneda = Number(nuevoViatico.id_moneda)
-    const montoEntregado = Number(nuevoViatico.monto_entregado || 0)
-    const montoDevuelto = Number(nuevoViatico.monto_devuelto || 0)
-    if (!idMoneda || !Number.isFinite(idMoneda)) {
-      toast.add({ type: "error", description: "Seleccioná una moneda válida." })
-      return
-    }
-    try {
-      const response = await fetchWithConnectionCheck(
-        "/api/generales/viaticos/crear",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id_viaje_usuario: Number(idViajeUsuarioActual),
-            id_moneda: idMoneda,
-            monto_entregado: montoEntregado,
-            monto_devuelto: montoDevuelto,
-          }),
-        }
-      )
-      const payload = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        throw new Error(
-          typeof payload?.detail === "string"
-            ? payload.detail
-            : "No se pudo crear el viático"
-        )
-      }
-      await cargarDetalleViaje(String(idViajeUsuarioActual))
-      setNuevoViatico(VIATICO_VACIO)
-      setDialogViaticoAbierto(false)
-      toast.add({
-        type: "success",
-        description: "Viático agregado correctamente.",
-      })
-    } catch {
-      toast.add({
-        type: "error",
-        description: "No se pudo guardar el viático.",
       })
     }
   }
@@ -389,16 +493,6 @@ export function useVerRendiciones() {
     }
   }
 
-  const abrirDialogViatico = () => {
-    if (!idViajeUsuarioActual) return
-    setDialogViaticoAbierto(true)
-  }
-
-  const cerrarDialogViatico = (open: boolean) => {
-    setDialogViaticoAbierto(open)
-    if (!open) setNuevoViatico(VIATICO_VACIO)
-  }
-
   const abrirDialogComentario = () => {
     if (!idViajeUsuarioActual) return
     setDialogComentarioAbierto(true)
@@ -429,12 +523,34 @@ export function useVerRendiciones() {
     setDialogAbierto(false)
     setViajes([])
     setViajeSeleccionado(undefined)
+    setComentarios([])
+    setViaticos([])
+    setTickets([])
+    setTicketImagenes({})
   }
 
   const seleccionarViaje = (index: number) => {
     setComentarios([])
     setViaticos([])
+    setTickets([])
+    setTicketImagenes({})
+    setTicketDetalle(null)
+    setDialogTicketDetalleAbierto(false)
     setViajeSeleccionado(index)
+  }
+
+  const abrirDetalleTicket = (ticket: TicketDelViaje) => {
+    setReciboSeleccionado(undefined)
+    setTicketDetalle(null)
+    setDialogTicketDetalleAbierto(true)
+    void cargarDetalleTicket(ticket.id_ticket)
+  }
+
+  const cerrarDetalleTicket = (open: boolean) => {
+    setDialogTicketDetalleAbierto(open)
+    if (!open) {
+      setTicketDetalle(null)
+    }
   }
 
   // ------------------- EFFECTS -------------------
@@ -478,13 +594,14 @@ export function useVerRendiciones() {
   }, [dialogAbierto])
 
   useEffect(() => {
-    if (!empleadoSeleccionado) return
+    if (!usuarioActualId) return
+
     let cancelled = false
     const cargarViajes = async () => {
       try {
         setLoadingViajes(true)
         const response = await fetchWithConnectionCheck(
-          `/api/generales/viajes/viajante?id_usuario_viajante=${encodeURIComponent(empleadoSeleccionado)}`
+          `/api/generales/viajes/viajante?id_usuario_viajante=${encodeURIComponent(usuarioActualId)}`
         )
         if (!response.ok) throw new Error("Error al obtener viajes")
         const body = await response.json()
@@ -497,6 +614,7 @@ export function useVerRendiciones() {
           .map(mapViajeDelEmpleado)
           .filter((x): x is ViajeDelEmpleado => x !== null)
         if (!cancelled) {
+          setEmpleadoSeleccionado(usuarioActualId)
           setViajes(viajesCargados)
           setViajeSeleccionado(undefined)
           setComentarios([])
@@ -508,18 +626,19 @@ export function useVerRendiciones() {
           setComentarios([])
           toast.add({
             type: "error",
-            description: "No se pudieron cargar los viajes del empleado",
+            description: "No se pudieron cargar tus viajes",
           })
         }
       } finally {
         if (!cancelled) setLoadingViajes(false)
       }
     }
+
     void cargarViajes()
     return () => {
       cancelled = true
     }
-  }, [empleadoSeleccionado])
+  }, [usuarioActualId])
 
   useEffect(() => {
     const info = viajes[viajeSeleccionado ?? -1]
@@ -532,7 +651,7 @@ export function useVerRendiciones() {
     return () => {
       cancelled = true
     }
-  }, [viajes, viajeSeleccionado])
+  }, [cargarDetalleViaje, viajes, viajeSeleccionado])
 
   useEffect(() => {
     if (!dialogViaticoEdicionAbierto) return
@@ -601,11 +720,14 @@ export function useVerRendiciones() {
     setReciboSeleccionado,
     comentarios,
     viaticos,
+    tickets,
+    ticketDetalle,
+    loadingTicketDetalle,
+    ticketImagenes,
+    loadingTicketImagenes,
     monedas,
     textoComentario,
     setTextoComentario,
-    nuevoViatico,
-    setNuevoViatico,
     viaticoEditando,
     setViaticoEditando,
     filtroInput,
@@ -616,6 +738,7 @@ export function useVerRendiciones() {
     loadingViajes,
     loadingComentarios,
     loadingViaticos,
+    loadingTickets,
     loadingMonedas,
 
     // paginación
@@ -627,25 +750,26 @@ export function useVerRendiciones() {
 
     // dialogs open state
     dialogAbierto,
-    dialogViaticoAbierto,
     dialogComentarioAbierto,
     dialogViaticoEdicionAbierto,
+    dialogTicketDetalleAbierto,
 
     // actions
     aplicarFiltro,
     limpiarFiltro,
     abrirDialogViajante,
     cerrarDialogViajante,
-    abrirDialogViatico,
-    cerrarDialogViatico,
     abrirDialogComentario,
     cerrarDialogComentario,
     cerrarDialogEdicion,
     abrirEdicionViatico,
     seleccionarEmpleado,
     seleccionarViaje,
+    abrirDetalleTicket,
+    cerrarDetalleTicket,
+    cargarDetalleTicket,
+    aprobarTicket,
     guardarComentario,
-    guardarViatico,
     guardarViaticoEditado,
     aprobarViatico,
   }
