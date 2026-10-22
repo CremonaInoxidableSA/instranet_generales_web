@@ -920,12 +920,22 @@ export function useVerRendiciones() {
       setDialogTicketEdicionAbierto(false)
 
       if (seguir) {
-        const indiceActual = tickets.findIndex(
+        const ticketsPendientes = tickets.filter(
+          (item) =>
+            String(item.estado ?? "")
+              .trim()
+              .toUpperCase() === "PENDIENTE"
+        )
+        const indiceActual = ticketsPendientes.findIndex(
           (item) => item.id_ticket === datos.id_ticket
         )
-        const siguiente = tickets[indiceActual + 1]
+        const siguiente = ticketsPendientes[indiceActual + 1]
+
         if (siguiente) {
-          setReciboSeleccionado(indiceActual + 1)
+          const indiceGlobal = tickets.findIndex(
+            (item) => item.id_ticket === siguiente.id_ticket
+          )
+          setReciboSeleccionado(indiceGlobal)
           await cargarDetalleTicket(siguiente.id_ticket)
           toast.add({
             type: "success",

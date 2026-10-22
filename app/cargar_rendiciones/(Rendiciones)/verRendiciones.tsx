@@ -346,9 +346,21 @@ export default function VerRendiciones() {
         conceptos={r.conceptos}
         loadingCatalogos={r.loadingCatalogosTicket}
         siguienteDisponible={
-          ticketActual !== null &&
-          r.tickets.findIndex((t) => t.id_ticket === ticketActual.id_ticket) <
-            r.tickets.length - 1
+          !!ticketActual &&
+          (() => {
+            const ticketsPendientes = r.tickets.filter(
+              (t) =>
+                String(t.estado ?? "")
+                  .trim()
+                  .toUpperCase() === "PENDIENTE"
+            )
+            const indiceActual = ticketsPendientes.findIndex(
+              (t) => t.id_ticket === ticketActual.id_ticket
+            )
+            return (
+              indiceActual >= 0 && indiceActual < ticketsPendientes.length - 1
+            )
+          })()
         }
       />
     </div>

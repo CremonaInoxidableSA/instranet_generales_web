@@ -40,31 +40,21 @@ export default function VerRendiciones() {
       <div className="flex flex-1 flex-col gap-3 rounded">
         {/* Selección de viaje */}
         <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
-          <div className="flex flex-col justify-between">
-            <div className="flex flex-1 flex-row gap-3">
-              <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
-              <Boton
-                onClick={r.abrirDialogViajante}
-                disabled={r.loadingEmpleados}
-                extraClass="rounded border-2 border-bluecremona bg-bluecremona/20 text-sm text-bluecremona hover:bg-bluecremona/30"
-              >
-                <span>
-                  {r.loadingEmpleados
-                    ? "Cargando empleados..."
-                    : r.empleadoSeleccionadoInfo
-                      ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
-                      : "Seleccionar viajante"}
-                </span>
-              </Boton>
-            </div>
-            {r.empleadoSeleccionadoInfo && (
-              <p className="text-xs opacity-70">
-                Viajante seleccionado: {r.empleadoSeleccionadoInfo.legajo}
-                {r.empleadoSeleccionadoInfo.legajo ? " · " : ""}
-                {r.empleadoSeleccionadoInfo.nombre}{" "}
-                {r.empleadoSeleccionadoInfo.apellido}
-              </p>
-            )}
+          <div className="gap-3 flex flex-row justify-between">
+            <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
+            <Boton
+              onClick={r.abrirDialogViajante}
+              disabled={r.loadingEmpleados}
+              extraClass="rounded border-2 border-bluecremona bg-bluecremona/20 text-sm text-bluecremona hover:bg-bluecremona/30"
+            >
+              <span>
+                {r.loadingEmpleados
+                  ? "Cargando empleados..."
+                  : r.empleadoSeleccionadoInfo
+                    ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
+                    : "Seleccionar viajante"}
+              </span>
+            </Boton>
           </div>
 
           {r.loadingViajes ? (
