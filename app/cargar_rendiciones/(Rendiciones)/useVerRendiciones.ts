@@ -47,6 +47,12 @@ export function useVerRendiciones() {
   const [comentarios, setComentarios] = useState<ComentarioDelViaje[]>([])
   const [viaticos, setViaticos] = useState<ViaticoDelViaje[]>([])
   const [tickets, setTickets] = useState<TicketDelViaje[]>([])
+  const [gastosViaje, setGastosViaje] = useState({
+    ars: 0,
+    usd: 0,
+    eur: 0,
+    otr: 0,
+  })
   const [ticketImagenes, setTicketImagenes] = useState<Record<number, string>>(
     {}
   )
@@ -269,6 +275,7 @@ export function useVerRendiciones() {
     let comentariosNuevos: ComentarioDelViaje[] = []
     let viaticosNuevos: ViaticoDelViaje[] = []
     let ticketsNuevos: TicketDelViaje[] = []
+    let gastosNuevos = { ars: 0, usd: 0, eur: 0, otr: 0 }
 
     try {
       setLoadingComentarios(true)
@@ -341,8 +348,16 @@ export function useVerRendiciones() {
       ticketsNuevos = list
         .map(mapTicketDelViaje)
         .filter((x): x is TicketDelViaje => x !== null)
+
+      gastosNuevos = {
+        ars: Number(body?.gastos_ars ?? 0),
+        usd: Number(body?.gastos_usd ?? 0),
+        eur: Number(body?.gastos_eur ?? 0),
+        otr: Number(body?.gastos_otr ?? 0),
+      }
     } catch {
       ticketsNuevos = []
+      gastosNuevos = { ars: 0, usd: 0, eur: 0, otr: 0 }
       toast.add({
         type: "error",
         description: "No se pudieron cargar los recibos del viaje",
@@ -354,6 +369,7 @@ export function useVerRendiciones() {
     setComentarios(comentariosNuevos)
     setViaticos(viaticosNuevos)
     setTickets(ticketsNuevos)
+    setGastosViaje(gastosNuevos)
     setTicketImagenes({})
 
     for (const ticket of ticketsNuevos) {
@@ -735,6 +751,7 @@ export function useVerRendiciones() {
     setComentarios([])
     setViaticos([])
     setTickets([])
+    setGastosViaje({ ars: 0, usd: 0, eur: 0, otr: 0 })
     setTicketImagenes({})
   }
 
@@ -744,6 +761,7 @@ export function useVerRendiciones() {
       setComentarios([])
       setViaticos([])
       setTickets([])
+      setGastosViaje({ ars: 0, usd: 0, eur: 0, otr: 0 })
       setTicketImagenes({})
       setTicketDetalle(null)
       setDialogTicketDetalleAbierto(false)
@@ -757,6 +775,7 @@ export function useVerRendiciones() {
     setComentarios([])
     setViaticos([])
     setTickets([])
+    setGastosViaje({ ars: 0, usd: 0, eur: 0, otr: 0 })
     setTicketImagenes({})
     setTicketDetalle(null)
     setDialogTicketDetalleAbierto(false)
@@ -1107,12 +1126,14 @@ export function useVerRendiciones() {
           setViajes(viajesCargados)
           setViajeSeleccionado(undefined)
           setComentarios([])
+          setGastosViaje({ ars: 0, usd: 0, eur: 0, otr: 0 })
         }
       } catch {
         if (!cancelled) {
           setViajes([])
           setViajeSeleccionado(undefined)
           setComentarios([])
+          setGastosViaje({ ars: 0, usd: 0, eur: 0, otr: 0 })
           toast.add({
             type: "error",
             description: "No se pudieron cargar tus viajes",
@@ -1241,6 +1262,7 @@ export function useVerRendiciones() {
     comentarios,
     viaticos,
     tickets,
+    gastosViaje,
     ticketDetalle,
     loadingTicketDetalle,
     ticketEditando,

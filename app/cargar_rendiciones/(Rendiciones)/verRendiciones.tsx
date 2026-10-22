@@ -25,6 +25,12 @@ const getEstadoTicket = (estado?: string | null) => {
   return "PENDIENTE"
 }
 
+const formatearMonto = (valor: number | string | undefined | null) =>
+  Number(valor ?? 0).toLocaleString("es-AR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
+
 export default function VerRendiciones() {
   const r = useVerRendiciones()
   const ticketActual = r.ticketDetalle
@@ -127,21 +133,29 @@ export default function VerRendiciones() {
             <div className="flex w-full flex-row gap-2">
               <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO USD</p>
-                <p className="text-sm opacity-50">U$D 631,14</p>
+                <p className="text-sm opacity-50">
+                  U$D {formatearMonto(r.gastosViaje.usd)}
+                </p>
               </div>
               <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO ARS</p>
-                <p className="text-sm opacity-50">AR$ 325.800</p>
+                <p className="text-sm opacity-50">
+                  AR$ {formatearMonto(r.gastosViaje.ars)}
+                </p>
               </div>
             </div>
             <div className="flex w-full flex-row gap-2">
               <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO EUR</p>
-                <p className="text-sm opacity-50">€UR 325.14</p>
+                <p className="text-sm opacity-50">
+                  € {formatearMonto(r.gastosViaje.eur)}
+                </p>
               </div>
               <div className="flex-1 rounded bg-background3 p-2">
                 <p className="text-sm">TOTAL GASTO LOCAL</p>
-                <p className="text-sm opacity-50">$ 325.14</p>
+                <p className="text-sm opacity-50">
+                  $ {formatearMonto(r.gastosViaje.otr)}
+                </p>
               </div>
             </div>
           </div>
