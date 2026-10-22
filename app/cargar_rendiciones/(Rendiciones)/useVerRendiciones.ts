@@ -190,8 +190,31 @@ export function useVerRendiciones() {
       }
 
       setTicketDetalle(ticket)
+      if (puedeEditarTicket(ticket.estado)) {
+        const siguienteTicketEditando = {
+          id_ticket: ticket.id_ticket,
+          nombre_imagen: ticket.nombre_imagen,
+          fecha_gasto: String(ticket.fecha_gasto ?? "").includes("T")
+            ? String(ticket.fecha_gasto ?? "").slice(0, 10)
+            : String(ticket.fecha_gasto ?? ""),
+          monto:
+            ticket.monto !== null && ticket.monto !== undefined
+              ? String(ticket.monto)
+              : "",
+          id_medio_pago: ticket.id_medio_pago
+            ? String(ticket.id_medio_pago)
+            : "",
+          id_moneda: ticket.id_moneda ? String(ticket.id_moneda) : "",
+          id_concepto: ticket.id_concepto ? String(ticket.id_concepto) : "",
+        }
+        setTicketEditando(siguienteTicketEditando)
+        void cargarCatalogosTicket()
+      } else {
+        setTicketEditando(null)
+      }
     } catch {
       setTicketDetalle(null)
+      setTicketEditando(null)
       toast.add({
         type: "error",
         description: "No se pudo cargar el detalle del recibo.",
@@ -749,6 +772,7 @@ export function useVerRendiciones() {
   const abrirDetalleTicket = (ticket: TicketDelViaje) => {
     setReciboSeleccionado(undefined)
     setTicketDetalle(null)
+    setTicketEditando(null)
     setDialogTicketDetalleAbierto(true)
     void cargarDetalleTicket(ticket.id_ticket)
   }
@@ -757,6 +781,7 @@ export function useVerRendiciones() {
     setDialogTicketDetalleAbierto(open)
     if (!open) {
       setTicketDetalle(null)
+      setTicketEditando(null)
     }
   }
 
@@ -764,7 +789,8 @@ export function useVerRendiciones() {
     const value = String(estado ?? "")
       .trim()
       .toUpperCase()
-    return value !== "APROBADO" && !value.includes("APROB")
+
+    return value !== "APROBADO" && value !== "APROBADA"
   }
 
   const abrirEdicionTicket = (ticket: TicketDetalle | null) => {
@@ -888,14 +914,21 @@ export function useVerRendiciones() {
         if (siguiente) {
           setReciboSeleccionado(indiceActual + 1)
           await cargarDetalleTicket(siguiente.id_ticket)
+          toast.add({
+            type: "success",
+            description: "Recibo actualizado correctamente.",
+          })
+          return
         }
       }
 
+      setDialogTicketDetalleAbierto(false)
+      setTicketDetalle(null)
+      setReciboSeleccionado(undefined)
+
       toast.add({
         type: "success",
-        description: seguir
-          ? "Recibo actualizado correctamente."
-          : "Recibo actualizado correctamente.",
+        description: "Recibo actualizado correctamente.",
       })
     } catch (error) {
       toast.add({
@@ -988,12 +1021,20 @@ export function useVerRendiciones() {
           })
           .filter((item): item is Moneda => item !== null)
 
-      setMonedas(mapCatalogo(parseCatalogo(bodyMonedas), "id_moneda", "nombre"))
+      const soloHabilitados = (
+        items: unknown[],
+        keyId: string,
+        keyLabel: string
+      ) => mapCatalogo(items, keyId, keyLabel)
+
+      setMonedas(
+        soloHabilitados(parseCatalogo(bodyMonedas), "id_moneda", "nombre")
+      )
       setMediosPago(
-        mapCatalogo(parseCatalogo(bodyMedios), "id_medio_pago", "nombre")
+        soloHabilitados(parseCatalogo(bodyMedios), "id_medio_pago", "nombre")
       )
       setConceptos(
-        mapCatalogo(parseCatalogo(bodyConceptos), "id_concepto", "nombre")
+        soloHabilitados(parseCatalogo(bodyConceptos), "id_concepto", "nombre")
       )
     } catch {
       setMonedas([])
