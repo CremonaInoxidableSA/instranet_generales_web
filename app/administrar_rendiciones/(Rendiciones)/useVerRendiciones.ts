@@ -237,6 +237,80 @@ export function useVerRendiciones() {
     }
   }, [])
 
+  const descargarRecibosExcel = useCallback(async () => {
+    if (!idViajeUsuarioActual) {
+      toast.add({
+        type: "error",
+        description: "Seleccioná un viaje antes de descargar el Excel.",
+      })
+      return
+    }
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        `/api/generales/reportes/excel-tickets?id_viaje_usuario=${encodeURIComponent(String(idViajeUsuarioActual))}`
+      )
+
+      if (!response.ok) {
+        const payload = await response
+          .clone()
+          .json()
+          .catch(() => null)
+        const message =
+          typeof payload === "object" && payload && "error" in payload
+            ? String((payload as { error?: string }).error ?? "")
+            : ""
+
+        throw new Error(
+          message || "No se pudo descargar el archivo Excel de recibos."
+        )
+      }
+
+      const blob = await response.blob()
+      if (!blob.size) {
+        throw new Error("El archivo Excel está vacío.")
+      }
+
+      const contentDisposition =
+        response.headers.get("content-disposition") ?? ""
+      const fileName = (() => {
+        const match =
+          contentDisposition.match(/filename\*=(?:UTF-8'')?([^;]+)/i) ||
+          contentDisposition.match(/filename=(?:"|')?([^;"']+)(?:"|')?/i)
+
+        if (match?.[1]) {
+          return decodeURIComponent(match[1].replace(/['"]/g, ""))
+        }
+
+        return "recibos.xlsx"
+      })()
+
+      const objectUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = objectUrl
+      anchor.download = fileName
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+
+      toast.add({
+        type: "success",
+        description: "Excel de recibos descargado correctamente.",
+      })
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "No se pudo descargar el Excel de recibos."
+
+      toast.add({
+        type: "error",
+        description: message,
+      })
+    }
+  }, [idViajeUsuarioActual])
+
   const cargarDetalleViaje = useCallback(async (idViajeUsuario: string) => {
     let comentariosNuevos: ComentarioDelViaje[] = []
     let viaticosNuevos: ViaticoDelViaje[] = []
@@ -780,6 +854,7 @@ export function useVerRendiciones() {
     dialogAprobacionViaticoAbierto,
     viaticoAprobacion,
     dialogTicketDetalleAbierto,
+    descargarRecibosExcel,
 
     aplicarFiltro,
     limpiarFiltro,

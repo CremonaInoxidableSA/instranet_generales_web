@@ -40,7 +40,7 @@ export default function VerRendiciones() {
       <div className="flex flex-1 flex-col gap-3 rounded">
         {/* Selección de viaje */}
         <div className="flex min-h-100 flex-1 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
-          <div className="gap-3 flex flex-row justify-between">
+          <div className="flex flex-row justify-between gap-3">
             <h1 className="w-full font-semibold">SELECCIONE EL VIAJE</h1>
             <Boton
               onClick={r.abrirDialogViajante}
@@ -122,16 +122,25 @@ export default function VerRendiciones() {
       </div>
 
       {/* ---------- COLUMNA DERECHA ---------- */}
-      <div className="flex flex-1 flex-col gap-3">
+      <div className="flex flex-1 flex-col gap-2">
         {/* Resumen + recibos */}
-        <div className="flex min-h-175 flex-2 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
-          <h1 className="font-semibold">
-            {r.empleadoSeleccionadoInfo
-              ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
-              : "SIN VIAJANTE SELECCIONADO"}
-            {" | "}
-            {r.viajeActual?.nombre_viaje ?? "SIN VIAJE SELECCIONADO"}
-          </h1>
+        <div className="flex min-h-175 flex-2 flex-col gap-2 rounded bg-background2 p-5 xl:min-h-0">
+          <div className="flex flex-row items-center justify-between gap-2">
+            <h1 className="font-semibold">
+              {r.empleadoSeleccionadoInfo
+                ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
+                : "SIN VIAJANTE SELECCIONADO"}
+              {" | "}
+              {r.viajeActual?.nombre_viaje ?? "SIN VIAJE SELECCIONADO"}
+            </h1>
+            <Boton
+              onClick={r.descargarRecibosExcel}
+              disabled={!r.idViajeUsuarioActual}
+              extraClass="border-2 border-greencremona bg-greencremona/20 text-greencremona hover:bg-greencremona/60"
+              placeholder="DESCARGAR RECIBOS EXCEL"
+            />
+          </div>
+
           <div className="flex w-full flex-col gap-2 xl:flex-row">
             <div className="flex w-full flex-row gap-2">
               <div className="flex-1 rounded bg-background3 p-2">
