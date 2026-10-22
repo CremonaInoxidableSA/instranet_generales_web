@@ -51,6 +51,16 @@ export type TicketDetalle = {
   nombre_concepto?: string | null
 }
 
+export type TicketEditando = {
+  id_ticket: number
+  nombre_imagen: string
+  fecha_gasto: string
+  monto: string
+  id_medio_pago: string
+  id_moneda: string
+  id_concepto: string
+}
+
 export type Moneda = {
   id: string
   nombre: string

@@ -19,6 +19,7 @@ type Props = {
   ticket: TicketDetalle | null
   loading: boolean
   imageUrl?: string
+  onEditar?: () => void
   onAprobar?: () => void
   onEliminar?: () => void
 }
@@ -58,10 +59,18 @@ export function DetalleTicketDialog({
   ticket,
   loading,
   imageUrl,
+  onEditar,
   onAprobar,
   onEliminar,
 }: Props) {
   const estado = getEstadoTicket(ticket?.estado)
+  const puedeEditarTicket =
+    !!ticket &&
+    !["APROBADO", "APROBADA"].includes(
+      String(ticket.estado ?? "")
+        .trim()
+        .toUpperCase()
+    )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,6 +173,14 @@ export function DetalleTicketDialog({
 
         <DialogFooter className="gap-2">
           <Boton onClick={() => onOpenChange(false)}>Cerrar</Boton>
+          {onEditar && puedeEditarTicket && (
+            <Boton
+              onClick={onEditar}
+              extraClass="border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+            >
+              Editar
+            </Boton>
+          )}
           {onEliminar && (
             <Boton
               onClick={() => {

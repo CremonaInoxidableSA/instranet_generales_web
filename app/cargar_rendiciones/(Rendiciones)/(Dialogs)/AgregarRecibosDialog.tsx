@@ -123,7 +123,7 @@ export function AgregarRecibosDialog({
               archivos.map((archivo) => (
                 <div
                   key={archivo.id}
-                  className="relative flex w-[140px] flex-col gap-2 rounded border border-background6 bg-background3 p-2"
+                  className="relative flex w-35 flex-col gap-2 rounded border border-background6 bg-background3 p-2"
                 >
                   <button
                     type="button"

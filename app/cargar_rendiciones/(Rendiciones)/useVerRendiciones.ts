@@ -19,6 +19,7 @@ import type {
   Moneda,
   TicketDelViaje,
   TicketDetalle,
+  TicketEditando,
   ViaticoDelViaje,
   ViaticoEditando,
   ViajeDelEmpleado,
@@ -63,12 +64,20 @@ export function useVerRendiciones() {
     useState(false)
   const [dialogTicketDetalleAbierto, setDialogTicketDetalleAbierto] =
     useState(false)
+  const [dialogTicketEdicionAbierto, setDialogTicketEdicionAbierto] =
+    useState(false)
 
   const [textoComentario, setTextoComentario] = useState("")
   const [ticketDetalle, setTicketDetalle] = useState<TicketDetalle | null>(null)
   const [loadingTicketDetalle, setLoadingTicketDetalle] = useState(false)
+  const [ticketEditando, setTicketEditando] = useState<TicketEditando | null>(
+    null
+  )
   const [viaticoEditando, setViaticoEditando] =
     useState<ViaticoEditando | null>(null)
+  const [mediosPago, setMediosPago] = useState<Moneda[]>([])
+  const [conceptos, setConceptos] = useState<Moneda[]>([])
+  const [loadingCatalogosTicket, setLoadingCatalogosTicket] = useState(false)
 
   const [filtroInput, setFiltroInput] = useState("")
   const [filtro, setFiltro] = useState("")
@@ -751,6 +760,232 @@ export function useVerRendiciones() {
     }
   }
 
+  const puedeEditarTicket = (estado?: string | null) => {
+    const value = String(estado ?? "")
+      .trim()
+      .toUpperCase()
+    return value !== "APROBADO" && !value.includes("APROB")
+  }
+
+  const abrirEdicionTicket = (ticket: TicketDetalle | null) => {
+    if (!ticket || !puedeEditarTicket(ticket.estado)) {
+      return
+    }
+
+    const fecha = String(ticket.fecha_gasto ?? "").trim()
+    const fechaNormalizada = fecha.includes("T") ? fecha.slice(0, 10) : fecha
+
+    setTicketEditando({
+      id_ticket: ticket.id_ticket,
+      nombre_imagen: ticket.nombre_imagen,
+      fecha_gasto: fechaNormalizada,
+      monto:
+        ticket.monto !== null && ticket.monto !== undefined
+          ? String(ticket.monto)
+          : "",
+      id_medio_pago: ticket.id_medio_pago ? String(ticket.id_medio_pago) : "",
+      id_moneda: ticket.id_moneda ? String(ticket.id_moneda) : "",
+      id_concepto: ticket.id_concepto ? String(ticket.id_concepto) : "",
+    })
+    setDialogTicketDetalleAbierto(false)
+    setDialogTicketEdicionAbierto(true)
+  }
+
+  const cerrarDialogEdicionTicket = (open: boolean) => {
+    setDialogTicketEdicionAbierto(open)
+    if (!open) {
+      setTicketEditando(null)
+    }
+  }
+
+  const guardarTicketEditado = async () => {
+    if (!ticketEditando) {
+      toast.add({
+        type: "error",
+        description: "No hay un recibo válido para guardar.",
+      })
+      return
+    }
+
+    const fecha = ticketEditando.fecha_gasto.trim()
+    const nombreImagen = String(ticketEditando.nombre_imagen ?? "").trim()
+    const monto = Number(ticketEditando.monto)
+    const idMoneda = Number(ticketEditando.id_moneda)
+    const idMedioPago = Number(ticketEditando.id_medio_pago)
+    const idConcepto = Number(ticketEditando.id_concepto)
+
+    if (
+      !nombreImagen ||
+      !fecha ||
+      !Number.isFinite(monto) ||
+      monto <= 0 ||
+      !Number.isFinite(idMoneda) ||
+      !Number.isFinite(idMedioPago) ||
+      !Number.isFinite(idConcepto)
+    ) {
+      toast.add({
+        type: "error",
+        description: "Completá todos los campos del recibo antes de guardar.",
+      })
+      return
+    }
+
+    try {
+      const response = await fetchWithConnectionCheck(
+        "/api/generales/tickets/editar",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id_ticket: Number(ticketEditando.id_ticket),
+            nombre_imagen: nombreImagen,
+            fecha_gasto: fecha,
+            monto,
+            id_medio_pago: idMedioPago,
+            id_moneda: idMoneda,
+            id_concepto: idConcepto,
+          }),
+        }
+      )
+
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(
+          typeof payload?.detail === "string"
+            ? payload.detail
+            : typeof payload?.error === "string"
+              ? payload.error
+              : "No se pudo guardar la información del recibo"
+        )
+      }
+
+      if (idViajeUsuarioActual) {
+        await cargarDetalleViaje(String(idViajeUsuarioActual))
+      }
+      setTicketDetalle((prev) =>
+        prev && prev.id_ticket === ticketEditando.id_ticket
+          ? {
+              ...prev,
+              nombre_imagen: nombreImagen,
+              fecha_gasto: fecha,
+              monto,
+              id_medio_pago: idMedioPago,
+              id_moneda: idMoneda,
+              id_concepto: idConcepto,
+            }
+          : prev
+      )
+      setDialogTicketEdicionAbierto(false)
+      setTicketEditando(null)
+      toast.add({
+        type: "success",
+        description: "Recibo actualizado correctamente.",
+      })
+    } catch (error) {
+      toast.add({
+        type: "error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar la información del recibo.",
+      })
+    }
+  }
+
+  const parseCatalogo = (body: unknown) => {
+    if (Array.isArray(body)) return body
+    if (body && typeof body === "object") {
+      const record = body as Record<string, unknown>
+      if (Array.isArray(record.data)) return record.data
+      if (Array.isArray(record.items)) return record.items
+      if (Array.isArray(record.result)) return record.result
+      if (Array.isArray(record.tickets)) return record.tickets
+    }
+    return []
+  }
+
+  const cargarCatalogosTicket = useCallback(async () => {
+    try {
+      setLoadingCatalogosTicket(true)
+
+      const [respuestaMonedas, respuestaMedios, respuestaConceptos] =
+        await Promise.all([
+          fetchWithConnectionCheck("/api/generales/monedas/lista"),
+          fetchWithConnectionCheck("/api/generales/medios-pago/lista"),
+          fetchWithConnectionCheck("/api/generales/conceptos/lista"),
+        ])
+
+      const [bodyMonedas, bodyMedios, bodyConceptos] = await Promise.all([
+        respuestaMonedas.json().catch(() => []),
+        respuestaMedios.json().catch(() => []),
+        respuestaConceptos.json().catch(() => []),
+      ])
+
+      if (
+        !respuestaMonedas.ok ||
+        !respuestaMedios.ok ||
+        !respuestaConceptos.ok
+      ) {
+        throw new Error("No se pudieron cargar los catálogos del recibo")
+      }
+
+      const mapCatalogo = (items: unknown[], keyId: string, keyLabel: string) =>
+        items
+          .map((item) => {
+            const record = item as Record<string, unknown>
+            const estado = record.estado
+            const estadoValor =
+              typeof estado === "string"
+                ? estado.trim().toLowerCase()
+                : String(estado ?? "")
+                    .trim()
+                    .toLowerCase()
+            const estaActivo =
+              estado === undefined ||
+              estado === null ||
+              estado === "" ||
+              estado === true ||
+              estado === 1 ||
+              estadoValor === "activo" ||
+              estadoValor === "true" ||
+              estadoValor === "1" ||
+              estadoValor === "habilitado" ||
+              estadoValor === "enabled"
+
+            if (!estaActivo) return null
+
+            const id = String(record[keyId] ?? record.id ?? "").trim()
+            const nombre = String(
+              record[keyLabel] ?? record.nombre ?? record.descripcion ?? ""
+            ).trim()
+            if (!id && !nombre) return null
+            return {
+              id: id || "0",
+              nombre: nombre || `Opción ${id || ""}`,
+            }
+          })
+          .filter((item): item is Moneda => item !== null)
+
+      setMonedas(mapCatalogo(parseCatalogo(bodyMonedas), "id_moneda", "nombre"))
+      setMediosPago(
+        mapCatalogo(parseCatalogo(bodyMedios), "id_medio_pago", "nombre")
+      )
+      setConceptos(
+        mapCatalogo(parseCatalogo(bodyConceptos), "id_concepto", "nombre")
+      )
+    } catch {
+      setMonedas([])
+      setMediosPago([])
+      setConceptos([])
+      toast.add({
+        type: "error",
+        description: "No se pudieron cargar los catálogos del recibo.",
+      })
+    } finally {
+      setLoadingCatalogosTicket(false)
+    }
+  }, [])
+
   // ------------------- EFFECTS -------------------
   useEffect(() => {
     if (!dialogAbierto) return
@@ -852,7 +1087,7 @@ export function useVerRendiciones() {
   }, [cargarDetalleViaje, viajes, viajeSeleccionado])
 
   useEffect(() => {
-    if (!dialogViaticoEdicionAbierto) return
+    if (!dialogViaticoEdicionAbierto && !dialogTicketEdicionAbierto) return
     let cancelled = false
     const cargarMonedas = async () => {
       try {
@@ -900,7 +1135,22 @@ export function useVerRendiciones() {
     return () => {
       cancelled = true
     }
-  }, [dialogViaticoEdicionAbierto])
+  }, [dialogTicketEdicionAbierto, dialogViaticoEdicionAbierto])
+
+  useEffect(() => {
+    if (!dialogTicketEdicionAbierto) return
+    let cancelled = false
+
+    const cargarDatosTicket = async () => {
+      if (cancelled) return
+      await cargarCatalogosTicket()
+    }
+
+    void cargarDatosTicket()
+    return () => {
+      cancelled = true
+    }
+  }, [cargarCatalogosTicket, dialogTicketEdicionAbierto])
 
   // ------------------- API PÚBLICA DEL HOOK -------------------
   return {
@@ -921,9 +1171,14 @@ export function useVerRendiciones() {
     tickets,
     ticketDetalle,
     loadingTicketDetalle,
+    ticketEditando,
+    setTicketEditando,
     ticketImagenes,
     loadingTicketImagenes,
     monedas,
+    mediosPago,
+    conceptos,
+    loadingCatalogosTicket,
     textoComentario,
     setTextoComentario,
     viaticoEditando,
@@ -952,6 +1207,7 @@ export function useVerRendiciones() {
     dialogViaticoEdicionAbierto,
     dialogTicketUploadAbierto,
     dialogTicketDetalleAbierto,
+    dialogTicketEdicionAbierto,
 
     // actions
     aplicarFiltro,
@@ -970,12 +1226,16 @@ export function useVerRendiciones() {
     seleccionarViaje,
     abrirDetalleTicket,
     cerrarDetalleTicket,
+    abrirEdicionTicket,
+    cerrarDialogEdicionTicket,
+    guardarTicketEditado,
     cargarDetalleTicket,
     aprobarTicket,
     eliminarTicket,
     guardarComentario,
     guardarViaticoEditado,
     aprobarViatico,
+    puedeEditarTicket,
   }
 }
 
