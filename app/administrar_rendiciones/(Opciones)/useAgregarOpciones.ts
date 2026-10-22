@@ -56,7 +56,6 @@ export function useAgregarOpciones() {
   const [editViaje, setEditViaje] = useState<Viaje | null>(null)
   const [editOpen, setEditOpen] = useState(false)
 
-  // ------------------- DERIVED: LISTAS -------------------
   const monedaItems: ToggleListItem[] = useMemo(
     () =>
       monedas.map((moneda) => ({
@@ -97,13 +96,16 @@ export function useAgregarOpciones() {
     [conceptos]
   )
 
-  // Memoizado para evitar reruns del effect del dialog de edición
   const monedaOptions: MonedaOption[] = useMemo(
-    () => monedas.map((m) => ({ id_moneda: m.id_moneda, nombre: m.nombre })),
+    () =>
+      monedas.map((m) => ({
+        id_moneda: m.id_moneda,
+        nombre: m.nombre,
+        estado: m.estado,
+      })),
     [monedas]
   )
 
-  // ------------------- ACCIONES DE TOGGLE -------------------
   const toggleMoneda = async (item: ToggleListItem) => {
     if (item.estado) {
       await deshabilitarMoneda(item.id)
@@ -161,7 +163,6 @@ export function useAgregarOpciones() {
     await refreshConceptos()
   }
 
-  // ------------------- ACCIONES DE CREACIÓN -------------------
   const handleCreateSubmit = async (payload: CreatePayload) => {
     if (!createEntity) return
     switch (createEntity) {
@@ -188,7 +189,6 @@ export function useAgregarOpciones() {
 
   const cerrarCreacion = () => setCreateOpen(false)
 
-  // ------------------- ACCIONES DE EDICIÓN -------------------
   const abrirEdicionViaje = (item: ToggleListItem) => {
     const viajeSeleccionado = viajes.find((v) => v.id_viaje === item.id)
     if (!viajeSeleccionado) return
@@ -214,32 +214,27 @@ export function useAgregarOpciones() {
   }
 
   return {
-    // state dialogs
     createOpen,
     createEntity,
     editOpen,
     editViaje,
 
-    // derived
     monedaItems,
     viajeItems,
     medioPagoItems,
     motivoItems,
     monedaOptions,
 
-    // toggles
     toggleMoneda,
     toggleViaje,
     toggleMedioPago,
     toggleConcepto,
     toggleViajeInDialog,
 
-    // create
     abrirCreacion,
     cerrarCreacion,
     handleCreateSubmit,
 
-    // edit
     abrirEdicionViaje,
     cerrarEdicionViaje,
     handleEditViajeSubmit,

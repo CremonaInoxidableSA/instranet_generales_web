@@ -93,14 +93,7 @@ export function DetalleTicketDialog({
               )}
             </div>
 
-            <div className="flex flex-col gap-3 text-sm flex-1 justify-between">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-medium">Nombre</span>
-                <span className="max-w-[60%] truncate text-right text-foreground/80">
-                  {ticket.nombre_imagen}
-                </span>
-              </div>
-
+            <div className="flex flex-1 flex-col justify-between gap-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-medium">Estado</span>
                 <span
@@ -114,6 +107,13 @@ export function DetalleTicketDialog({
                   ].join(" ")}
                 >
                   {estado}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-medium">Nombre</span>
+                <span className="max-w-[60%] truncate text-right text-foreground/80">
+                  {ticket.nombre_imagen}
                 </span>
               </div>
 

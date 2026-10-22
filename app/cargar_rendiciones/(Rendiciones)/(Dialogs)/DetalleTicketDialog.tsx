@@ -145,6 +145,22 @@ export function DetalleTicketDialog({
 
             <div className="flex h-full flex-col justify-between gap-3 text-sm">
               <div className="flex items-center justify-between gap-3">
+                <span className="font-medium">Estado</span>
+                <span
+                  className={[
+                    "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase",
+                    estado === "PENDIENTE"
+                      ? "bg-redcremona/20 text-redcremona"
+                      : estado === "POR APROBAR"
+                        ? "bg-orangecremona/20 text-orangecremona"
+                        : "bg-greencremona/20 text-greencremona",
+                  ].join(" ")}
+                >
+                  {estado}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between gap-3">
                 <span className="font-medium">Nombre</span>
                 {estaEditando && ticketEditando ? (
                   <Input
@@ -163,22 +179,6 @@ export function DetalleTicketDialog({
                     {ticket.nombre_imagen}
                   </span>
                 )}
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-medium">Estado</span>
-                <span
-                  className={[
-                    "rounded-full px-2 py-0.5 text-[10px] font-medium uppercase",
-                    estado === "PENDIENTE"
-                      ? "bg-redcremona/20 text-redcremona"
-                      : estado === "POR APROBAR"
-                        ? "bg-orangecremona/20 text-orangecremona"
-                        : "bg-greencremona/20 text-greencremona",
-                  ].join(" ")}
-                >
-                  {estado}
-                </span>
               </div>
 
               <div className="flex items-center justify-between gap-3">

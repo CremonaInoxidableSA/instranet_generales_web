@@ -108,18 +108,17 @@ export function useSeleccionarViajantes(initialSelected: Viajante[]) {
   const getSeleccionados = () => Array.from(seleccion.values())
 
   return {
-    // state
     empleados,
     loading,
     filtroInput,
     setFiltroInput,
     seleccion,
-    // derived
+
     filasPagina,
     paginaActual,
     totalPaginas,
     seleccionadosCount: seleccion.size,
-    // actions
+    
     toggle,
     aplicarFiltro,
     limpiarFiltro,

@@ -31,7 +31,6 @@ export function useVerRendiciones() {
   const { id_current_user } = useUser()
   const usuarioActualId = (id_current_user ?? "").trim()
 
-  // ------------------- STATE -------------------
   const [empleados, setEmpleados] = useState<Empleado[]>([])
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("")
   const [viajes, setViajes] = useState<ViajeDelEmpleado[]>([])
@@ -83,7 +82,6 @@ export function useVerRendiciones() {
   const [filtro, setFiltro] = useState("")
   const [pagina, setPagina] = useState(0)
 
-  // ------------------- DERIVED -------------------
   const empleadosFiltrados = useMemo(() => {
     const textoBusqueda = normalizar(filtro.trim())
     if (!textoBusqueda) return empleados
@@ -117,7 +115,6 @@ export function useVerRendiciones() {
   const viajesTags = viajes.map((viaje) => viaje.nombre_viaje)
   const viajesSubtitles = viajes.map((viaje) => `ID: ${viaje.id_viaje}`)
 
-  // ------------------- ACCIONES DE FILTRO / PAGINACIÓN -------------------
   const aplicarFiltro = () => {
     setPagina(0)
     setFiltro(filtroInput)
@@ -134,7 +131,6 @@ export function useVerRendiciones() {
   const paginaSiguiente = () =>
     setPagina((actual) => Math.min(actual + 1, totalPaginas - 1))
 
-  // ------------------- CARGA DE DATOS -------------------
   const cargarImagenTicket = async (idTicket: number) => {
     if (!idTicket) return
 
@@ -417,7 +413,6 @@ export function useVerRendiciones() {
     [cargarDetalleViaje, idViajeUsuarioActual]
   )
 
-  // ------------------- HANDLERS: GUARDAR / APROBAR -------------------
   const guardarComentario = async () => {
     if (!idViajeUsuarioActual) {
       toast.add({
@@ -592,7 +587,6 @@ export function useVerRendiciones() {
     }
   }
 
-  // ------------------- SELECCIÓN / APERTURA DE DIÁLOGOS -------------------
   const abrirDialogViajante = () => {
     setFiltroInput("")
     setFiltro("")
@@ -1049,7 +1043,6 @@ export function useVerRendiciones() {
     }
   }, [])
 
-  // ------------------- EFFECTS -------------------
   useEffect(() => {
     if (!dialogAbierto) return
     let cancelled = false
@@ -1233,9 +1226,7 @@ export function useVerRendiciones() {
     }
   }, [cargarCatalogosTicket, dialogTicketEdicionAbierto])
 
-  // ------------------- API PÚBLICA DEL HOOK -------------------
   return {
-    // state
     empleados,
     empleadoSeleccionado,
     empleadoSeleccionadoInfo,
@@ -1267,7 +1258,6 @@ export function useVerRendiciones() {
     filtroInput,
     setFiltroInput,
 
-    // loading
     loadingEmpleados,
     loadingViajes,
     loadingComentarios,
@@ -1275,14 +1265,12 @@ export function useVerRendiciones() {
     loadingTickets,
     loadingMonedas,
 
-    // paginación
     filasPagina,
     paginaActual,
     totalPaginas,
     paginaAnterior,
     paginaSiguiente,
 
-    // dialogs open state
     dialogAbierto,
     dialogComentarioAbierto,
     dialogViaticoEdicionAbierto,
@@ -1290,7 +1278,6 @@ export function useVerRendiciones() {
     dialogTicketDetalleAbierto,
     dialogTicketEdicionAbierto,
 
-    // actions
     aplicarFiltro,
     limpiarFiltro,
     abrirDialogViajante,

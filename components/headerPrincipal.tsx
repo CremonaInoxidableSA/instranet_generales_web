@@ -28,7 +28,6 @@ export default function HeaderPrincipal() {
     [tieneAccesoSubmodulo, user?.submodulos_personales]
   )
 
-  // Links para desktop (solo Home y Tickets)
   const desktopLinks = submodulosUnificados.filter((sub) => sub.isSpecial)
   const [drawerOpen, setDrawerOpen] = useState(false)
 

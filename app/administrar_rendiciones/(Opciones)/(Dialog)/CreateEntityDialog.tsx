@@ -48,6 +48,17 @@ export function CreateEntityDialog({
       .trim()
       .toLowerCase()
 
+    const isInactive =
+      estado === false ||
+      estado === 0 ||
+      estadoTexto === "false" ||
+      estadoTexto === "0" ||
+      estadoTexto === "inactivo" ||
+      estadoTexto === "deshabilitado" ||
+      estadoTexto === "disabled"
+
+    if (isInactive) return false
+
     return (
       estado === undefined ||
       estado === null ||
