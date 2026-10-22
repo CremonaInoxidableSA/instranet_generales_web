@@ -27,7 +27,7 @@ export function AgregarComentarioDialog({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-lg">
+      <DialogContent className="z-100 bg-background2 sm:max-w-lg" showCloseButton>
         <DialogHeader>
           <DialogTitle>Agregar comentario</DialogTitle>
           <DialogDescription>
@@ -46,7 +46,6 @@ export function AgregarComentarioDialog({
         </div>
 
         <DialogFooter>
-          <Boton onClick={() => onOpenChange(false)}>Cancelar</Boton>
           <Boton onClick={onGuardar}>Guardar</Boton>
         </DialogFooter>
       </DialogContent>

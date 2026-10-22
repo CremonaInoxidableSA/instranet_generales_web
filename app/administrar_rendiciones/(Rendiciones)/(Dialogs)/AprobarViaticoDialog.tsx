@@ -104,7 +104,6 @@ export function EditarViaticoDialog({
         )}
 
         <DialogFooter className="gap-2">
-          <Boton onClick={() => onOpenChange(false)}>Cancelar</Boton>
           <Boton onClick={onAprobar}>Aprobar</Boton>
           <Boton onClick={onGuardar}>Guardar</Boton>
         </DialogFooter>

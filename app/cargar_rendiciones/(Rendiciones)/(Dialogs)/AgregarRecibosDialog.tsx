@@ -105,7 +105,10 @@ export function AgregarRecibosDialog({
 
   return (
     <Dialog open={open} onOpenChange={cerrar}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-2xl">
+      <DialogContent
+        className="z-100 bg-background2 sm:max-w-2xl"
+        showCloseButton
+      >
         <DialogHeader>
           <DialogTitle>Agregar recibos</DialogTitle>
           <DialogDescription>
@@ -178,9 +181,6 @@ export function AgregarRecibosDialog({
         </div>
 
         <DialogFooter>
-          <Boton type="button" onClick={() => cerrar(false)}>
-            Cancelar
-          </Boton>
           <Boton
             type="button"
             disabled={loading || subiendo || archivos.length === 0}

@@ -787,8 +787,6 @@ export function useVerRendiciones() {
       id_moneda: ticket.id_moneda ? String(ticket.id_moneda) : "",
       id_concepto: ticket.id_concepto ? String(ticket.id_concepto) : "",
     })
-    setDialogTicketDetalleAbierto(false)
-    setDialogTicketEdicionAbierto(true)
   }
 
   const cerrarDialogEdicionTicket = (open: boolean) => {
@@ -798,8 +796,12 @@ export function useVerRendiciones() {
     }
   }
 
-  const guardarTicketEditado = async () => {
-    if (!ticketEditando) {
+  const guardarTicketEditado = async (
+    ticketAEditar: TicketEditando | null = ticketEditando,
+    seguir = false
+  ) => {
+    const datos = ticketAEditar ?? ticketEditando
+    if (!datos) {
       toast.add({
         type: "error",
         description: "No hay un recibo válido para guardar.",
@@ -807,12 +809,12 @@ export function useVerRendiciones() {
       return
     }
 
-    const fecha = ticketEditando.fecha_gasto.trim()
-    const nombreImagen = String(ticketEditando.nombre_imagen ?? "").trim()
-    const monto = Number(ticketEditando.monto)
-    const idMoneda = Number(ticketEditando.id_moneda)
-    const idMedioPago = Number(ticketEditando.id_medio_pago)
-    const idConcepto = Number(ticketEditando.id_concepto)
+    const fecha = datos.fecha_gasto.trim()
+    const nombreImagen = String(datos.nombre_imagen ?? "").trim()
+    const monto = Number(datos.monto)
+    const idMoneda = Number(datos.id_moneda)
+    const idMedioPago = Number(datos.id_medio_pago)
+    const idConcepto = Number(datos.id_concepto)
 
     if (
       !nombreImagen ||
@@ -837,7 +839,7 @@ export function useVerRendiciones() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            id_ticket: Number(ticketEditando.id_ticket),
+            id_ticket: Number(datos.id_ticket),
             nombre_imagen: nombreImagen,
             fecha_gasto: fecha,
             monto,
@@ -863,7 +865,7 @@ export function useVerRendiciones() {
         await cargarDetalleViaje(String(idViajeUsuarioActual))
       }
       setTicketDetalle((prev) =>
-        prev && prev.id_ticket === ticketEditando.id_ticket
+        prev && prev.id_ticket === datos.id_ticket
           ? {
               ...prev,
               nombre_imagen: nombreImagen,
@@ -875,11 +877,25 @@ export function useVerRendiciones() {
             }
           : prev
       )
-      setDialogTicketEdicionAbierto(false)
       setTicketEditando(null)
+      setDialogTicketEdicionAbierto(false)
+
+      if (seguir) {
+        const indiceActual = tickets.findIndex(
+          (item) => item.id_ticket === datos.id_ticket
+        )
+        const siguiente = tickets[indiceActual + 1]
+        if (siguiente) {
+          setReciboSeleccionado(indiceActual + 1)
+          await cargarDetalleTicket(siguiente.id_ticket)
+        }
+      }
+
       toast.add({
         type: "success",
-        description: "Recibo actualizado correctamente.",
+        description: seguir
+          ? "Recibo actualizado correctamente."
+          : "Recibo actualizado correctamente.",
       })
     } catch (error) {
       toast.add({
@@ -890,6 +906,12 @@ export function useVerRendiciones() {
             : "No se pudo guardar la información del recibo.",
       })
     }
+  }
+
+  const guardarTicketEditadoYSiguiente = async (
+    ticketAEditar: TicketEditando | null = ticketEditando
+  ) => {
+    await guardarTicketEditado(ticketAEditar, true)
   }
 
   const parseCatalogo = (body: unknown) => {
@@ -1106,6 +1128,24 @@ export function useVerRendiciones() {
           setMonedas(
             list
               .map((item) => {
+                const estado = item.estado
+                const estadoTexto = String(estado ?? "")
+                  .trim()
+                  .toLowerCase()
+                const estaActivo =
+                  estado === undefined ||
+                  estado === null ||
+                  estado === "" ||
+                  estado === true ||
+                  estado === 1 ||
+                  estadoTexto === "activo" ||
+                  estadoTexto === "true" ||
+                  estadoTexto === "1" ||
+                  estadoTexto === "habilitado" ||
+                  estadoTexto === "enabled"
+
+                if (!estaActivo) return null
+
                 const id = String(item.id_moneda ?? item.id ?? "").trim()
                 const nombre = String(
                   item.nombre ?? item.moneda ?? item.descripcion ?? ""
@@ -1229,6 +1269,7 @@ export function useVerRendiciones() {
     abrirEdicionTicket,
     cerrarDialogEdicionTicket,
     guardarTicketEditado,
+    guardarTicketEditadoYSiguiente,
     cargarDetalleTicket,
     aprobarTicket,
     eliminarTicket,

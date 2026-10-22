@@ -9,7 +9,6 @@ import { EditarViaticoDialog } from "./(Dialogs)/EditarViaticoDialog"
 import { AgregarComentarioDialog } from "./(Dialogs)/AgregarComentarioDialog"
 import { AgregarRecibosDialog } from "./(Dialogs)/AgregarRecibosDialog"
 import { DetalleTicketDialog } from "./(Dialogs)/DetalleTicketDialog"
-import { EditarTicketDialog } from "./(Dialogs)/EditarTicketDialog"
 
 const truncarTexto = (texto: string, maxLength = 30) => {
   if (texto.length <= maxLength) return texto
@@ -112,14 +111,18 @@ export default function VerRendiciones() {
       {/* ---------- COLUMNA DERECHA ---------- */}
       <div className="flex flex-1 flex-col gap-2">
         {/* Resumen + recibos */}
-        <div className="flex min-h-175 flex-2 flex-col gap-3 rounded bg-background2 p-5 xl:min-h-0">
-          <h1 className="font-semibold">
-            {r.empleadoSeleccionadoInfo
-              ? `${r.empleadoSeleccionadoInfo.nombre} ${r.empleadoSeleccionadoInfo.apellido}`.trim()
-              : "SIN VIAJANTE SELECCIONADO"}
-            {" | "}
-            {r.viajeActual?.nombre_viaje ?? "SIN VIAJE SELECCIONADO"}
-          </h1>
+        <div className="flex min-h-175 flex-2 flex-col gap-2 rounded bg-background2 p-5 xl:min-h-0">
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="font-semibold">
+              {r.viajeActual?.nombre_viaje ?? "SIN VIAJE SELECCIONADO"}
+            </h1>
+            <Boton
+              placeholder="AGREGAR RECIBO"
+              extraClass="border-2 border-bluecremona bg-bluecremona/20 text-bluecremona hover:bg-bluecremona/30"
+              disabled={!r.idViajeUsuarioActual}
+              onClick={r.abrirDialogCargaTickets}
+            />
+          </div>
           <div className="flex w-full flex-col gap-2 xl:flex-row">
             <div className="flex w-full flex-row gap-2">
               <div className="flex-1 rounded bg-background3 p-2">
@@ -315,23 +318,24 @@ export default function VerRendiciones() {
         onEditar={
           ticketActual ? () => r.abrirEdicionTicket(ticketActual) : undefined
         }
+        onGuardar={r.guardarTicketEditado}
+        onGuardarYSiguiente={r.guardarTicketEditadoYSiguiente}
         onEliminar={
           ticketActual
             ? () => r.eliminarTicket(ticketActual.id_ticket)
             : undefined
         }
-      />
-
-      <EditarTicketDialog
-        open={r.dialogTicketEdicionAbierto}
-        onOpenChange={r.cerrarDialogEdicionTicket}
         ticketEditando={r.ticketEditando}
         onChange={r.setTicketEditando}
         monedas={r.monedas}
         mediosPago={r.mediosPago}
         conceptos={r.conceptos}
         loadingCatalogos={r.loadingCatalogosTicket}
-        onGuardar={r.guardarTicketEditado}
+        siguienteDisponible={
+          ticketActual !== null &&
+          r.tickets.findIndex((t) => t.id_ticket === ticketActual.id_ticket) <
+            r.tickets.length - 1
+        }
       />
     </div>
   )

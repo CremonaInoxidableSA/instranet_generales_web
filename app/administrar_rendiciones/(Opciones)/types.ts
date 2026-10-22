@@ -36,6 +36,7 @@ export type EditViajePayload = {
 export type MonedaOption = {
   id_moneda: number
   nombre?: string
+  estado?: boolean | number | string | null
 }
 
 export type EditViajeDialogProps = {

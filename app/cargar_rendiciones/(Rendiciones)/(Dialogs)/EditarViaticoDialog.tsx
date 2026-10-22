@@ -35,7 +35,7 @@ export function EditarViaticoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-md">
+      <DialogContent className="z-100 bg-background2 sm:max-w-md" showCloseButton>
         <DialogHeader>
           <DialogTitle>
             {esCreacion ? "Crear viático" : "Editar viático"}
@@ -108,7 +108,6 @@ export function EditarViaticoDialog({
         )}
 
         <DialogFooter className="gap-2">
-          <Boton onClick={() => onOpenChange(false)}>Cancelar</Boton>
           <Boton onClick={onGuardar}>{esCreacion ? "Crear" : "Guardar"}</Boton>
         </DialogFooter>
       </DialogContent>

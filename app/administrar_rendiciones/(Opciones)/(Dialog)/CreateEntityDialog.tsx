@@ -42,6 +42,25 @@ export function CreateEntityDialog({
   if (!entity) return null
 
   const isViaje = entity === "viaje"
+  const monedasActivas = monedas.filter((moneda) => {
+    const estado = moneda.estado
+    const estadoTexto = String(estado ?? "")
+      .trim()
+      .toLowerCase()
+
+    return (
+      estado === undefined ||
+      estado === null ||
+      estado === "" ||
+      estado === true ||
+      estado === 1 ||
+      estadoTexto === "activo" ||
+      estadoTexto === "true" ||
+      estadoTexto === "1" ||
+      estadoTexto === "habilitado" ||
+      estadoTexto === "enabled"
+    )
+  })
   const canSubmit =
     nombre.trim().length > 0 && (!isViaje || selectedMonedaId !== "")
 
@@ -89,7 +108,7 @@ export function CreateEntityDialog({
               <SelectorConBusqueda
                 placeholder="Seleccionar moneda"
                 searchPlaceholder="Buscar moneda..."
-                data={monedas.map((moneda) => ({
+                data={monedasActivas.map((moneda) => ({
                   id: String(moneda.id_moneda),
                   nombre: moneda.nombre ?? `Moneda ${moneda.id_moneda}`,
                 }))}
@@ -102,9 +121,6 @@ export function CreateEntityDialog({
         </div>
 
         <DialogFooter className="mt-2">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
           <Button
             type="button"
             disabled={!canSubmit}

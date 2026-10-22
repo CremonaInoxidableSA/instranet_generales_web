@@ -93,7 +93,7 @@ export function DetalleTicketDialog({
               )}
             </div>
 
-            <div className="flex flex-col gap-3 text-sm">
+            <div className="flex flex-col gap-3 text-sm flex-1 justify-between">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-medium">Nombre</span>
                 <span className="max-w-[60%] truncate text-right text-foreground/80">
@@ -161,7 +161,6 @@ export function DetalleTicketDialog({
         )}
 
         <DialogFooter className="gap-2">
-          <Boton onClick={() => onOpenChange(false)}>Cerrar</Boton>
           {ticket?.estado === "POR APROBAR" && (
             <Boton
               onClick={onAprobar}

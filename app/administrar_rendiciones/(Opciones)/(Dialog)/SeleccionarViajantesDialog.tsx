@@ -154,9 +154,6 @@ export function SeleccionarViajantesDialog({
       </div>
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
         <Button
           type="button"
           onClick={() => {

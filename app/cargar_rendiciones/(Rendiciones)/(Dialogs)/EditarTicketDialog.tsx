@@ -178,7 +178,6 @@ export function EditarTicketDialog({
         )}
 
         <DialogFooter className="gap-2">
-          <Boton onClick={() => onOpenChange(false)}>Cancelar</Boton>
           <Boton
             type="button"
             onClick={onGuardar}

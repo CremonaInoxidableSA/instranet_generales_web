@@ -24,6 +24,25 @@ export function EditViajeDialog({
   onToggleStatus,
 }: EditViajeDialogProps) {
   const d = useEditViajeDialog({ open, viaje, monedas, onLoadDetalle })
+  const monedasHabilitadas = monedas.filter((moneda) => {
+    const estado = moneda.estado
+    const estadoTexto = String(estado ?? "")
+      .trim()
+      .toLowerCase()
+
+    return (
+      estado === undefined ||
+      estado === null ||
+      estado === "" ||
+      estado === true ||
+      estado === 1 ||
+      estadoTexto === "activo" ||
+      estadoTexto === "true" ||
+      estadoTexto === "1" ||
+      estadoTexto === "habilitado" ||
+      estadoTexto === "enabled"
+    )
+  })
 
   if (!viaje) return null
 
@@ -62,7 +81,7 @@ export function EditViajeDialog({
             <SelectorConBusqueda
               placeholder="Seleccionar moneda"
               searchPlaceholder="Buscar moneda..."
-              data={monedas.map((moneda) => ({
+              data={monedasHabilitadas.map((moneda) => ({
                 id: String(moneda.id_moneda),
                 nombre: moneda.nombre ?? `Moneda ${moneda.id_moneda}`,
               }))}
@@ -95,9 +114,6 @@ export function EditViajeDialog({
             }}
           >
             {viaje.estado === false ? "Habilitar viaje" : "Deshabilitar viaje"}
-          </Button>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
           </Button>
           <Button
             type="button"

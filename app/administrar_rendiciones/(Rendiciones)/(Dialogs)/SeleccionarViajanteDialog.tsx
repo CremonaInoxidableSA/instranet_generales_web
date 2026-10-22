@@ -163,9 +163,7 @@ export function SeleccionarViajanteDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Boton onClick={() => onOpenChange(false)}>Cancelar</Boton>
-        </DialogFooter>
+        <DialogFooter />
       </DialogContent>
     </Dialog>
   )

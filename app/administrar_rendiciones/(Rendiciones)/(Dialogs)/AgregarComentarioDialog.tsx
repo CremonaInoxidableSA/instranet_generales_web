@@ -46,7 +46,6 @@ export function AgregarComentarioDialog({
         </div>
 
         <DialogFooter>
-          <Boton onClick={() => onOpenChange(false)}>Cancelar</Boton>
           <Boton onClick={onGuardar}>Guardar</Boton>
         </DialogFooter>
       </DialogContent>
