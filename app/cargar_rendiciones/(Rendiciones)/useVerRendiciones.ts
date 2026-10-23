@@ -381,6 +381,21 @@ export function useVerRendiciones() {
     async (idTicket: number) => {
       if (!idTicket) return
 
+      const ticketActual = tickets.find(
+        (ticket) => ticket.id_ticket === idTicket
+      )
+      const estadoTicket = String(ticketActual?.estado ?? "")
+        .trim()
+        .toUpperCase()
+
+      if (["APROBADO", "APROBADA"].includes(estadoTicket)) {
+        toast.add({
+          type: "error",
+          description: "No se puede eliminar un recibo aprobado.",
+        })
+        return
+      }
+
       try {
         const response = await fetchWithConnectionCheck(
           "/api/generales/tickets/eliminar",
@@ -426,7 +441,7 @@ export function useVerRendiciones() {
         })
       }
     },
-    [cargarDetalleViaje, idViajeUsuarioActual]
+    [cargarDetalleViaje, idViajeUsuarioActual, tickets]
   )
 
   const guardarComentario = async () => {

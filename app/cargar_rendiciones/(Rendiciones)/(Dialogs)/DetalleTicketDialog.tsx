@@ -83,13 +83,15 @@ export function DetalleTicketDialog({
   siguienteDisponible,
 }: Props) {
   const estado = getEstadoTicket(ticket?.estado)
-  const puedeEditarTicket =
+  const ticketAprobado =
     !!ticket &&
-    !["APROBADO", "APROBADA"].includes(
+    ["APROBADO", "APROBADA"].includes(
       String(ticket.estado ?? "")
         .trim()
         .toUpperCase()
     )
+  const puedeEditarTicket = !!ticket && !ticketAprobado
+  const puedeEliminarTicket = !!ticket && !ticketAprobado
   const estaEditando =
     !!ticket &&
     !!ticketEditando &&
@@ -159,7 +161,7 @@ export function DetalleTicketDialog({
                   {estado}
                 </span>
               </div>
-              
+
               <div className="flex items-center justify-between gap-3">
                 <span className="font-medium">Nombre</span>
                 {estaEditando && ticketEditando ? (
@@ -330,6 +332,16 @@ export function DetalleTicketDialog({
         <DialogFooter className="gap-2">
           {estaEditando ? (
             <>
+              {onEliminar && puedeEliminarTicket && (
+                <Boton
+                  onClick={() => {
+                    onEliminar()
+                  }}
+                  extraClass="border-redcremona bg-redcremona/20 text-redcremona hover:bg-redcremona/30"
+                >
+                  Eliminar
+                </Boton>
+              )}
               <Boton
                 onClick={() => ticketEditando && onGuardar?.(ticketEditando)}
                 disabled={!formularioValido || loadingCatalogos}
@@ -359,7 +371,7 @@ export function DetalleTicketDialog({
                   Editar
                 </Boton>
               )}
-              {onEliminar && (
+              {onEliminar && puedeEliminarTicket && (
                 <Boton
                   onClick={() => {
                     onEliminar()

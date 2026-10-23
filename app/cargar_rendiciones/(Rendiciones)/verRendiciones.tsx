@@ -335,7 +335,12 @@ export default function VerRendiciones() {
         onGuardar={r.guardarTicketEditado}
         onGuardarYSiguiente={r.guardarTicketEditadoYSiguiente}
         onEliminar={
-          ticketActual
+          ticketActual &&
+          !["APROBADO", "APROBADA"].includes(
+            String(ticketActual.estado ?? "")
+              .trim()
+              .toUpperCase()
+          )
             ? () => r.eliminarTicket(ticketActual.id_ticket)
             : undefined
         }
