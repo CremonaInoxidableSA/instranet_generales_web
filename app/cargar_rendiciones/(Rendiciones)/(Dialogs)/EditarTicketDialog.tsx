@@ -46,7 +46,7 @@ export function EditarTicketDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-xl">
+      <DialogContent className="z-[80] bg-background2 sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Editar recibo</DialogTitle>
           <DialogDescription>

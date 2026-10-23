@@ -125,7 +125,7 @@ export function CreateEntityDialog({
                 }))}
                 value={selectedMonedaId}
                 onValueChange={(value) => setSelectedMonedaId(value)}
-                extraClass="w-full"
+                extraClass="w-full z-[80]"
               />
             </div>
           )}

@@ -35,7 +35,10 @@ export function EditarViaticoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-md" showCloseButton>
+      <DialogContent
+        className="z-[80] bg-background2 sm:max-w-md"
+        showCloseButton
+      >
         <DialogHeader>
           <DialogTitle>
             {esCreacion ? "Crear viático" : "Editar viático"}

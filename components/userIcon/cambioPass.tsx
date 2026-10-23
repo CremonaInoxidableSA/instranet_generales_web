@@ -128,7 +128,7 @@ const CambioPass = ({ open, onOpenChange }: CambioPassProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-150">
+      <DialogContent className="z-[80] bg-background2 sm:max-w-150">
         <DialogHeader>
           <DialogTitle>Cambiar contraseña</DialogTitle>
           <DialogDescription>

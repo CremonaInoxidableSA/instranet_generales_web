@@ -168,63 +168,176 @@ export function useVerRendiciones() {
     }
   }
 
-  const cargarDetalleTicket = useCallback(async (idTicket: number) => {
-    if (!idTicket) return
+  const puedeEditarTicket = useCallback((estado?: string | null) => {
+    const value = String(estado ?? "")
+      .trim()
+      .toUpperCase()
 
+    return value !== "APROBADO" && value !== "APROBADA"
+  }, [])
+
+  const parseCatalogo = (body: unknown) => {
+    if (Array.isArray(body)) return body
+    if (body && typeof body === "object") {
+      const record = body as Record<string, unknown>
+      if (Array.isArray(record.data)) return record.data
+      if (Array.isArray(record.items)) return record.items
+      if (Array.isArray(record.result)) return record.result
+      if (Array.isArray(record.tickets)) return record.tickets
+    }
+    return []
+  }
+
+  const cargarCatalogosTicket = useCallback(async () => {
     try {
-      setLoadingTicketDetalle(true)
-      const response = await fetchWithConnectionCheck(
-        `/api/generales/tickets/detalles?id_ticket=${encodeURIComponent(String(idTicket))}`
+      setLoadingCatalogosTicket(true)
+
+      const [respuestaMonedas, respuestaMedios, respuestaConceptos] =
+        await Promise.all([
+          fetchWithConnectionCheck("/api/generales/monedas/lista"),
+          fetchWithConnectionCheck("/api/generales/medios-pago/lista"),
+          fetchWithConnectionCheck("/api/generales/conceptos/lista"),
+        ])
+
+      const [bodyMonedas, bodyMedios, bodyConceptos] = await Promise.all([
+        respuestaMonedas.json().catch(() => []),
+        respuestaMedios.json().catch(() => []),
+        respuestaConceptos.json().catch(() => []),
+      ])
+
+      if (
+        !respuestaMonedas.ok ||
+        !respuestaMedios.ok ||
+        !respuestaConceptos.ok
+      ) {
+        throw new Error("No se pudieron cargar los catálogos del recibo")
+      }
+
+      const mapCatalogo = (items: unknown[], keyId: string, keyLabel: string) =>
+        items
+          .map((item) => {
+            const record = item as Record<string, unknown>
+            const estado = record.estado
+            const estadoValor =
+              typeof estado === "string"
+                ? estado.trim().toLowerCase()
+                : String(estado ?? "")
+                    .trim()
+                    .toLowerCase()
+            const estaActivo =
+              estado === undefined ||
+              estado === null ||
+              estado === "" ||
+              estado === true ||
+              estado === 1 ||
+              estadoValor === "activo" ||
+              estadoValor === "true" ||
+              estadoValor === "1" ||
+              estadoValor === "habilitado" ||
+              estadoValor === "enabled"
+
+            if (!estaActivo) return null
+
+            const id = String(record[keyId] ?? record.id ?? "").trim()
+            const nombre = String(
+              record[keyLabel] ?? record.nombre ?? record.descripcion ?? ""
+            ).trim()
+            if (!id && !nombre) return null
+            return {
+              id: id || "0",
+              nombre: nombre || `Opción ${id || ""}`,
+            }
+          })
+          .filter((item): item is Moneda => item !== null)
+
+      const soloHabilitados = (
+        items: unknown[],
+        keyId: string,
+        keyLabel: string
+      ) => mapCatalogo(items, keyId, keyLabel)
+
+      setMonedas(
+        soloHabilitados(parseCatalogo(bodyMonedas), "id_moneda", "nombre")
       )
-      if (!response.ok)
-        throw new Error("Error al obtener el detalle del ticket")
-      const body = await response.json()
-      const ticket =
-        (body?.ticket && typeof body.ticket === "object"
-          ? mapTicketDetalle(body.ticket as Record<string, unknown>)
-          : null) ??
-        (Array.isArray(body)
-          ? mapTicketDetalle(body[0] as Record<string, unknown>)
-          : null)
-
-      if (!ticket) {
-        throw new Error("No se encontró detalle del ticket")
-      }
-
-      setTicketDetalle(ticket)
-      if (puedeEditarTicket(ticket.estado)) {
-        const siguienteTicketEditando = {
-          id_ticket: ticket.id_ticket,
-          nombre_imagen: ticket.nombre_imagen,
-          fecha_gasto: String(ticket.fecha_gasto ?? "").includes("T")
-            ? String(ticket.fecha_gasto ?? "").slice(0, 10)
-            : String(ticket.fecha_gasto ?? ""),
-          monto:
-            ticket.monto !== null && ticket.monto !== undefined
-              ? String(ticket.monto)
-              : "",
-          id_medio_pago: ticket.id_medio_pago
-            ? String(ticket.id_medio_pago)
-            : "",
-          id_moneda: ticket.id_moneda ? String(ticket.id_moneda) : "",
-          id_concepto: ticket.id_concepto ? String(ticket.id_concepto) : "",
-        }
-        setTicketEditando(siguienteTicketEditando)
-        void cargarCatalogosTicket()
-      } else {
-        setTicketEditando(null)
-      }
+      setMediosPago(
+        soloHabilitados(parseCatalogo(bodyMedios), "id_medio_pago", "nombre")
+      )
+      setConceptos(
+        soloHabilitados(parseCatalogo(bodyConceptos), "id_concepto", "nombre")
+      )
     } catch {
-      setTicketDetalle(null)
-      setTicketEditando(null)
+      setMonedas([])
+      setMediosPago([])
+      setConceptos([])
       toast.add({
         type: "error",
-        description: "No se pudo cargar el detalle del recibo.",
+        description: "No se pudieron cargar los catálogos del recibo.",
       })
     } finally {
-      setLoadingTicketDetalle(false)
+      setLoadingCatalogosTicket(false)
     }
   }, [])
+
+  const cargarDetalleTicket = useCallback(
+    async (idTicket: number) => {
+      if (!idTicket) return
+
+      try {
+        setLoadingTicketDetalle(true)
+        const response = await fetchWithConnectionCheck(
+          `/api/generales/tickets/detalles?id_ticket=${encodeURIComponent(String(idTicket))}`
+        )
+        if (!response.ok)
+          throw new Error("Error al obtener el detalle del ticket")
+        const body = await response.json()
+        const ticket =
+          (body?.ticket && typeof body.ticket === "object"
+            ? mapTicketDetalle(body.ticket as Record<string, unknown>)
+            : null) ??
+          (Array.isArray(body)
+            ? mapTicketDetalle(body[0] as Record<string, unknown>)
+            : null)
+
+        if (!ticket) {
+          throw new Error("No se encontró detalle del ticket")
+        }
+
+        setTicketDetalle(ticket)
+        if (puedeEditarTicket(ticket.estado)) {
+          const siguienteTicketEditando = {
+            id_ticket: ticket.id_ticket,
+            nombre_imagen: ticket.nombre_imagen,
+            fecha_gasto: String(ticket.fecha_gasto ?? "").includes("T")
+              ? String(ticket.fecha_gasto ?? "").slice(0, 10)
+              : String(ticket.fecha_gasto ?? ""),
+            monto:
+              ticket.monto !== null && ticket.monto !== undefined
+                ? String(ticket.monto)
+                : "",
+            id_medio_pago: ticket.id_medio_pago
+              ? String(ticket.id_medio_pago)
+              : "",
+            id_moneda: ticket.id_moneda ? String(ticket.id_moneda) : "",
+            id_concepto: ticket.id_concepto ? String(ticket.id_concepto) : "",
+          }
+          setTicketEditando(siguienteTicketEditando)
+          void cargarCatalogosTicket()
+        } else {
+          setTicketEditando(null)
+        }
+      } catch {
+        setTicketDetalle(null)
+        setTicketEditando(null)
+        toast.add({
+          type: "error",
+          description: "No se pudo cargar el detalle del recibo.",
+        })
+      } finally {
+        setLoadingTicketDetalle(false)
+      }
+    },
+    [cargarCatalogosTicket, puedeEditarTicket]
+  )
 
   const aprobarTicket = useCallback(async (idTicket: number) => {
     if (!idTicket) return
@@ -813,14 +926,6 @@ export function useVerRendiciones() {
     }
   }
 
-  const puedeEditarTicket = (estado?: string | null) => {
-    const value = String(estado ?? "")
-      .trim()
-      .toUpperCase()
-
-    return value !== "APROBADO" && value !== "APROBADA"
-  }
-
   const abrirEdicionTicket = (ticket: TicketDetalle | null) => {
     if (!ticket || !puedeEditarTicket(ticket.estado)) {
       return
@@ -984,108 +1089,6 @@ export function useVerRendiciones() {
   ) => {
     await guardarTicketEditado(ticketAEditar, true)
   }
-
-  const parseCatalogo = (body: unknown) => {
-    if (Array.isArray(body)) return body
-    if (body && typeof body === "object") {
-      const record = body as Record<string, unknown>
-      if (Array.isArray(record.data)) return record.data
-      if (Array.isArray(record.items)) return record.items
-      if (Array.isArray(record.result)) return record.result
-      if (Array.isArray(record.tickets)) return record.tickets
-    }
-    return []
-  }
-
-  const cargarCatalogosTicket = useCallback(async () => {
-    try {
-      setLoadingCatalogosTicket(true)
-
-      const [respuestaMonedas, respuestaMedios, respuestaConceptos] =
-        await Promise.all([
-          fetchWithConnectionCheck("/api/generales/monedas/lista"),
-          fetchWithConnectionCheck("/api/generales/medios-pago/lista"),
-          fetchWithConnectionCheck("/api/generales/conceptos/lista"),
-        ])
-
-      const [bodyMonedas, bodyMedios, bodyConceptos] = await Promise.all([
-        respuestaMonedas.json().catch(() => []),
-        respuestaMedios.json().catch(() => []),
-        respuestaConceptos.json().catch(() => []),
-      ])
-
-      if (
-        !respuestaMonedas.ok ||
-        !respuestaMedios.ok ||
-        !respuestaConceptos.ok
-      ) {
-        throw new Error("No se pudieron cargar los catálogos del recibo")
-      }
-
-      const mapCatalogo = (items: unknown[], keyId: string, keyLabel: string) =>
-        items
-          .map((item) => {
-            const record = item as Record<string, unknown>
-            const estado = record.estado
-            const estadoValor =
-              typeof estado === "string"
-                ? estado.trim().toLowerCase()
-                : String(estado ?? "")
-                    .trim()
-                    .toLowerCase()
-            const estaActivo =
-              estado === undefined ||
-              estado === null ||
-              estado === "" ||
-              estado === true ||
-              estado === 1 ||
-              estadoValor === "activo" ||
-              estadoValor === "true" ||
-              estadoValor === "1" ||
-              estadoValor === "habilitado" ||
-              estadoValor === "enabled"
-
-            if (!estaActivo) return null
-
-            const id = String(record[keyId] ?? record.id ?? "").trim()
-            const nombre = String(
-              record[keyLabel] ?? record.nombre ?? record.descripcion ?? ""
-            ).trim()
-            if (!id && !nombre) return null
-            return {
-              id: id || "0",
-              nombre: nombre || `Opción ${id || ""}`,
-            }
-          })
-          .filter((item): item is Moneda => item !== null)
-
-      const soloHabilitados = (
-        items: unknown[],
-        keyId: string,
-        keyLabel: string
-      ) => mapCatalogo(items, keyId, keyLabel)
-
-      setMonedas(
-        soloHabilitados(parseCatalogo(bodyMonedas), "id_moneda", "nombre")
-      )
-      setMediosPago(
-        soloHabilitados(parseCatalogo(bodyMedios), "id_medio_pago", "nombre")
-      )
-      setConceptos(
-        soloHabilitados(parseCatalogo(bodyConceptos), "id_concepto", "nombre")
-      )
-    } catch {
-      setMonedas([])
-      setMediosPago([])
-      setConceptos([])
-      toast.add({
-        type: "error",
-        description: "No se pudieron cargar los catálogos del recibo.",
-      })
-    } finally {
-      setLoadingCatalogosTicket(false)
-    }
-  }, [])
 
   useEffect(() => {
     if (!dialogAbierto) return

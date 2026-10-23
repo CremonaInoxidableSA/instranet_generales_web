@@ -56,7 +56,7 @@ export function SeleccionarViajanteDialog({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-2xl">
+      <DialogContent className="z-[80] bg-background2 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Seleccionar viajante</DialogTitle>
           <DialogDescription>

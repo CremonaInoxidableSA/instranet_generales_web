@@ -98,7 +98,7 @@ export function EditViajeDialog({
               }))}
               value={d.selectedMonedaId}
               onValueChange={(value) => d.setSelectedMonedaId(value)}
-              extraClass="w-full"
+              extraClass="w-full z-[80]"
             />
           </div>
         </div>

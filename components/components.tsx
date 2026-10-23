@@ -226,7 +226,7 @@ export const SelectorConBusqueda = React.memo(function SelectorConBusqueda({
         }
       >
         <ComboboxChips
-          className={`min-h-10 w-full rounded border-2 border-background6 bg-background3 px-2 py-1 text-sm transition-colors focus-within:border-background6 ${extraClass ?? ""}`}
+          className={`min-h-8 w-full rounded border-2 border-background6 bg-background3 px-2 py-1 text-sm transition-colors focus-within:border-background6 ${extraClass ?? ""}`}
         >
           <ComboboxValue>
             {() => (
@@ -278,7 +278,7 @@ export const SelectorConBusqueda = React.memo(function SelectorConBusqueda({
       }
     >
       <ComboboxTrigger
-        className={`flex min-h-10 w-full items-center justify-between rounded border-2 border-background6 bg-background3 px-3 py-2 text-sm font-normal shadow-none hover:bg-background3 focus:border-background6 ${extraClass ?? ""}`}
+        className={`flex min-h-8 w-full items-center justify-between rounded border-2 border-background6 bg-background3 px-3 py-2 text-sm font-normal shadow-none hover:bg-background3 focus:border-background6 ${extraClass ?? ""}`}
         disabled={disabled}
       >
         <span
@@ -289,7 +289,7 @@ export const SelectorConBusqueda = React.memo(function SelectorConBusqueda({
           {selectedOption ? selectedOption.label : placeholder}
         </span>
       </ComboboxTrigger>
-      <ComboboxContent>
+      <ComboboxContent className={extraClass ?? ""}>
         <ComboboxInput
           showTrigger={false}
           placeholder={searchPlaceholder ?? "Buscar..."}
@@ -365,7 +365,7 @@ export const SelectorMultiple = React.memo(function SelectorMultiple({
           )}
         </ComboboxValue>
       </ComboboxChips>
-      <ComboboxContent>
+      <ComboboxContent className={extraClass ?? ""}>
         <ComboboxInput
           showTrigger={false}
           placeholder={`Buscar ${placeholder.toLowerCase()}...`}

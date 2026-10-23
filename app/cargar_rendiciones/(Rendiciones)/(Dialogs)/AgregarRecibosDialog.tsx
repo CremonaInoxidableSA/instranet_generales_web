@@ -106,7 +106,7 @@ export function AgregarRecibosDialog({
   return (
     <Dialog open={open} onOpenChange={cerrar}>
       <DialogContent
-        className="z-100 bg-background2 sm:max-w-2xl"
+        className="z-[80] bg-background2 sm:max-w-2xl"
         showCloseButton
       >
         <DialogHeader>

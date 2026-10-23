@@ -27,7 +27,7 @@ export function AgregarComentarioDialog({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-lg">
+      <DialogContent className="z-[80] bg-background2 sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Agregar comentario</DialogTitle>
           <DialogDescription>

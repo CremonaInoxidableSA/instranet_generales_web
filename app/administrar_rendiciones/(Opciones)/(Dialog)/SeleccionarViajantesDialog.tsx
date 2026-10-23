@@ -35,7 +35,7 @@ export function SeleccionarViajantesDialog({
   const s = useSeleccionarViajantes(initialSelected)
 
   return (
-    <DialogContent className="z-100 bg-background2 sm:max-w-2xl">
+    <DialogContent className="z-[80] bg-background2 sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>Seleccionar viajantes</DialogTitle>
         <DialogDescription>

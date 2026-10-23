@@ -110,14 +110,14 @@ export default function HeaderPrincipal() {
       {/* Overlay */}
       {drawerOpen && (
         <div
-          className="fixed inset-0 z-100 bg-black/50 xl:hidden"
+          className="fixed inset-0 z-[60] bg-black/50 xl:hidden"
           onClick={() => setDrawerOpen(false)}
         />
       )}
 
       {/* Drawer lateral izquierdo */}
       <div
-        className={`-header fixed top-0 left-0 z-100 flex h-full w-80 flex-col bg-headerbg transition-transform duration-300 ease-in-out xl:hidden ${
+        className={`-header fixed top-0 left-0 z-[70] flex h-full w-80 flex-col bg-headerbg transition-transform duration-300 ease-in-out xl:hidden ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

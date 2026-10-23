@@ -35,7 +35,7 @@ export function EditarViaticoDialog({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 bg-background2 sm:max-w-md">
+      <DialogContent className="z-80 bg-background2 sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar viático</DialogTitle>
           <DialogDescription>
@@ -62,7 +62,7 @@ export function EditarViaticoDialog({
                       actual ? { ...actual, id_moneda: value } : actual
                     )
                   }
-                  extraClass="w-full"
+                  extraClass="w-full z-80"
                 />
               )}
             </div>

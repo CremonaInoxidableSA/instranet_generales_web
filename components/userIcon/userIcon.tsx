@@ -103,7 +103,7 @@ const UserIcon = () => {
           </div>
         </PopoverTrigger>
 
-        <PopoverContent className="z-100">
+        <PopoverContent className="z-80">
           {loading ? (
             <div className="flex items-center gap-2">
               <Spinner />

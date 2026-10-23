@@ -118,7 +118,7 @@ export function useSeleccionarViajantes(initialSelected: Viajante[]) {
     paginaActual,
     totalPaginas,
     seleccionadosCount: seleccion.size,
-    
+
     toggle,
     aplicarFiltro,
     limpiarFiltro,
